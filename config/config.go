@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strings"
+	"sync"
 )
 
 // TorProxyConfig holds the configuration settings for the Tor proxy.
@@ -51,15 +52,20 @@ type Config struct {
 	TorProxy TorProxyConfig // TorProxy is the configuration for the TorProxy.
 }
 
+var (
+	configInstance *Config
+	once           sync.Once
+)
+
 // loadEnv attempts to load environment variables from a .env file located at the provided path.
 // It returns an error if the .env file cannot be loaded.
 func loadEnv(path string) error {
 	return godotenv.Load(path)
 }
 
-// GetConfig initializes the application's configuration by loading environment variables.
+// initializeConfig initializes the application's configuration by loading environment variables.
 // It accepts a path to the .env file and returns a pointer to a Config struct populated with all the configurations.
-func GetConfig(envPath string) (*Config, error) {
+func initializeConfig(envPath string) (*Config, error) {
 	if err := loadEnv(envPath); err != nil {
 		currentDir, _ := os.Getwd()
 		return nil, fmt.Errorf("failed to load .env file from directory: %s, error: %v", currentDir, err)
@@ -95,6 +101,25 @@ func GetConfig(envPath string) (*Config, error) {
 			ControlPort:     os.Getenv("TOR_PROXY_CONTROL_PORT"),
 		},
 	}, nil
+}
+
+// InitConfig initializes the configuration if it hasn't been initialized yet.
+// This function should be called once at the start of the application.
+func InitConfig(envPath string) error {
+	var err error
+	once.Do(func() {
+		configInstance, err = initializeConfig(envPath)
+	})
+	return err
+}
+
+// GetConfig returns the singleton instance of the application's configuration.
+// It returns an error if the configuration hasn't been initialized yet.
+func GetConfig() (*Config, error) {
+	if configInstance == nil {
+		return nil, fmt.Errorf("configuration not initialized, please call InitConfig first")
+	}
+	return configInstance, nil
 }
 
 // getSearchKeywordsFromEnv retrieves the search keywords from  environment variables.
