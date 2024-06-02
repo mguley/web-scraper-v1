@@ -1,0 +1,21 @@
+services:
+
+  test_mongo_db:
+    container_name: test_mongo_db
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: pass
+    networks:
+      scraper_network:
+        ipv4_address: 220.45.0.2
+
+
+networks:
+  scraper_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 220.45.0.0/16
