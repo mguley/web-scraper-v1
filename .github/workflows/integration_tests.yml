@@ -1,0 +1,40 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22.2'
+
+    - name: Run Docker Compose
+      run: docker-compose -f test/integration/docker/web_scraper_test.yml up -d
+
+    - name: Wait for MongoDB to be ready
+      run: |
+        echo "Waiting for MongoDB to be ready..."
+        until docker exec test_mongo_db mongo --eval "db.runCommand({ ping: 1 })"; do
+          echo "Waiting for MongoDB..."
+          sleep 5
+        done
+        echo "MongoDB is ready."
+
+    - name: Capture MongoDB logs if tests fail
+      if: failure()
+      run: docker logs test_mongodb
+
+    - name: Inspect MongoDB container if tests fail
+      if: failure()
+      run: docker inspect test_mongodb        
