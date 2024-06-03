@@ -27,6 +27,13 @@ services:
       scraper_network:
         ipv4_address: 218.45.0.3
 
+  scrapper_tor_proxy:
+    container_name: tor_proxy
+    build: ./tor/.
+    networks:
+      scraper_network:
+        ipv4_address: 218.45.0.4
+
 volumes:
   scraper_mongo_db_container:
 
