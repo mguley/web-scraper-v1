@@ -31,6 +31,10 @@ jobs:
         done
         echo "MongoDB is ready."
 
+    - name: Run integration tests
+      run: |
+        go test ./test/integration/... -v        
+
     - name: Capture MongoDB logs if tests fail
       if: failure()
       run: docker logs test_mongodb
