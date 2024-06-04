@@ -12,6 +12,14 @@ services:
       scraper_network:
         ipv4_address: 220.45.0.2
 
+  test_tor_proxy:
+    container_name: test_tor_proxy
+    build: ./tor/.
+    networks:
+      scraper_network:
+        ipv4_address: 220.45.0.3
+
+
 
 networks:
   scraper_network:

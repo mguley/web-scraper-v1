@@ -31,6 +31,15 @@ jobs:
         done
         echo "MongoDB is ready."
 
+    - name: Wait for Tor proxy to be ready
+      run: |
+        echo "Waiting for Tor proxy to be ready..."
+        until docker exec test_tor_proxy curl --socks5-hostname 220.45.0.3:9050 https://check.torproject.org/ > /dev/null 2>&1; do
+          echo "Waiting for Tor proxy..."
+          sleep 5
+        done
+        echo "Tor proxy is ready."        
+
     - name: Run integration tests
       run: |
         go test ./test/integration/... -v        
@@ -41,4 +50,12 @@ jobs:
 
     - name: Inspect MongoDB container if tests fail
       if: failure()
-      run: docker inspect test_mongodb        
+      run: docker inspect test_mongodb
+
+    - name: Capture Tor proxy logs if tests fail
+      if: failure()
+      run: docker logs test_tor_proxy
+
+    - name: Inspect Tor proxy container if tests fail
+      if: failure()
+      run: docker inspect test_tor_proxy
