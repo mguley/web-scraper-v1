@@ -1,4 +1,4 @@
-package integration
+package repository
 
 import (
 	"context"
@@ -24,7 +24,7 @@ var (
 
 func init() {
 	// Initialize flags
-	flag.StringVar(&envPath, "env", "config/.env", "path to env file")
+	flag.StringVar(&envPath, "env", "../config/.env", "path to env file")
 }
 
 // setupDB initializes the database configuration and establishes a connection to MongoDB.

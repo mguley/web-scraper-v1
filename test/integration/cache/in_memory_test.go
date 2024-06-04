@@ -1,4 +1,4 @@
-package integration
+package cache
 
 import (
 	"github.com/mguley/web-scraper-v1/internal/cache"
