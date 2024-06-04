@@ -1,28 +1,12 @@
 package tor
 
 import (
-	"flag"
-	"github.com/mguley/web-scraper-v1/config"
 	"github.com/mguley/web-scraper-v1/internal/tor"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"testing"
-	"time"
 )
-
-const (
-	timeout = 5 * time.Second
-)
-
-var (
-	envPath string
-	cfg     *config.Config
-)
-
-func init() {
-	flag.StringVar(&envPath, "env", "../config/.env", "path to env file")
-}
 
 // setupTorClient sets up a Tor-enabled HTTP client using configuration from an environment file.
 // If the configuration initialization fails or if there are errors during the creation of the HTTP client,
@@ -32,19 +16,6 @@ func init() {
 // - *http.Client: An HTTP client configured to use the Tor SOCKS5 proxy with the provided host, port, and timeout.
 // - error: An error if there was an issue initializing the configuration or creating the HTTP client.
 func setupTorClient() (*http.Client, error) {
-	// Initialize configuration
-	if initConfigErr := config.InitConfig(envPath); initConfigErr != nil {
-		log.Printf("Failed to initialize configuration: %v", initConfigErr)
-		return nil, initConfigErr
-	}
-
-	var configErr error
-	cfg, configErr = config.GetConfig()
-	if configErr != nil {
-		log.Printf("Failed to get config: %v", configErr)
-		return nil, configErr
-	}
-
 	httpClient, createErr := tor.NewTorClient().CreateHTTPClient(cfg.TorProxy.Host, cfg.TorProxy.Port, timeout)
 	if createErr != nil {
 		log.Printf("Failed to create tor http client: %v", createErr)
