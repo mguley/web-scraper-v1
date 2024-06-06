@@ -93,3 +93,11 @@ func (torFacade *Facade) TestConnection(url string) (string, error) {
 func (torFacade *Facade) FetchExitIP(url string) (string, error) {
 	return torFacade.TestConnection(url)
 }
+
+// ChangeIdentity changes the Tor identity.
+//
+// Returns:
+// - error: An error if the identity could not be changed.
+func (torFacade *Facade) ChangeIdentity() error {
+	return ChangeIdentity(torFacade.proxyConfig, torFacade.proxyConfig.ControlPassword)
+}
