@@ -5,7 +5,6 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/tor"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 // TestEstablishConnection tests the ability of the Facade to establish a Tor connection.
@@ -13,10 +12,11 @@ import (
 // Parameters:
 // - t *testing.T: The testing framework's instance.
 func TestEstablishConnection(t *testing.T) {
-	torFacade := tor.NewTorFacade(&cfg.TorProxy)
+	torFacade, createErr := tor.NewTorFacade(&cfg.TorProxy, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
 	// Establish connection
-	httpClient, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
 	assert.NotNil(t, httpClient)
 }
@@ -26,11 +26,13 @@ func TestEstablishConnection(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing framework's instance.
 func TestCheckConnection(t *testing.T) {
-	torFacade := tor.NewTorFacade(&cfg.TorProxy)
+	torFacade, createErr := tor.NewTorFacade(&cfg.TorProxy, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
 	// Establish connection
-	_, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
+	assert.NotNil(t, httpClient)
 
 	// Test the connection
 	response, responseErr := torFacade.TestConnection(cfg.TorProxy.PingUrl)
@@ -43,10 +45,12 @@ func TestCheckConnection(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing framework's instance.
 func TestFetchExitIP(t *testing.T) {
-	torFacade := tor.NewTorFacade(&cfg.TorProxy)
+	torFacade, createErr := tor.NewTorFacade(&cfg.TorProxy, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
-	_, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
+	assert.NotNil(t, httpClient)
 
 	// Fetch the exit IP address
 	ipAddress, fetchErr := torFacade.FetchExitIP(cfg.TorProxy.VerifyUrl)
@@ -54,55 +58,55 @@ func TestFetchExitIP(t *testing.T) {
 	assert.NotEmpty(t, ipAddress)
 }
 
-// TestChangeIdentityWrapperSuccess tests the successful change of Tor identity.
+// TestChangeIdentitySuccess tests the successful change of Tor identity.
 //
 // Parameters:
 // - t *testing.T: The testing framework's instance.
-func TestChangeIdentityWrapperSuccess(t *testing.T) {
-	torFacade := tor.NewTorFacade(&cfg.TorProxy)
+func TestChangeIdentitySuccess(t *testing.T) {
+	torFacade, createErr := tor.NewTorFacade(&cfg.TorProxy, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
-	_, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
+	assert.NotNil(t, httpClient)
 
 	// Change identity
 	changeErr := torFacade.ChangeIdentity()
-	// Wait a bit for the identity to change, Tor network latency
-	time.Sleep(10 * time.Second)
-
 	assert.NoError(t, changeErr)
 }
 
-// TestChangeIdentityWrapperFailure tests the failure scenario of changing Tor's identity due to an invalid password.
+// TestChangeIdentityFailure tests the failure scenario of changing Tor's identity due to an invalid password.
 //
 // Parameters:
 // - t *testing.T: The testing framework's instance.
-func TestChangeIdentityWrapperFailure(t *testing.T) {
+func TestChangeIdentityFailure(t *testing.T) {
 	invalidConfig := cfg.TorProxy
 	invalidConfig.ControlPassword = "invalid_password"
-	torFacade := tor.NewTorFacade(&invalidConfig)
+	torFacade, createErr := tor.NewTorFacade(&invalidConfig, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
 	// Establish connection
-	_, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
+	assert.NotNil(t, httpClient)
 
 	// Change identity should fail
 	identityErr := torFacade.ChangeIdentity()
-	// Wait a bit for the identity to change, Tor network latency
-	time.Sleep(10 * time.Second)
-
 	assert.Error(t, identityErr, "Identity change failed due to invalid credentials")
 }
 
-// TestChangeIdentityWrapperExitIPChange tests that the exit IP address changes after changing Tor identity.
+// TestChangeIdentityExitIPChange tests that the exit IP address changes after changing Tor identity.
 //
 // Parameters:
 // - t *testing.T: The testing framework's instance.
-func TestChangeIdentityWrapperExitIPChange(t *testing.T) {
-	torFacade := tor.NewTorFacade(&cfg.TorProxy)
+func TestChangeIdentityExitIPChange(t *testing.T) {
+	torFacade, createErr := tor.NewTorFacade(&cfg.TorProxy, poolSize)
+	assert.NoError(t, createErr, "No error should have been returned")
 
 	// Establish connection
-	_, err := torFacade.EstablishConnection(timeout)
+	httpClient, err := torFacade.EstablishConnection()
 	assert.NoError(t, err)
+	assert.NotNil(t, httpClient)
 
 	// Fetch initial exit IP address
 	initialIP, fetchErr := torFacade.FetchExitIP(cfg.TorProxy.VerifyUrl)
@@ -111,9 +115,6 @@ func TestChangeIdentityWrapperExitIPChange(t *testing.T) {
 
 	// Change identity
 	changeErr := torFacade.ChangeIdentity()
-	// Wait a bit for the identity to change, Tor network latency
-	time.Sleep(10 * time.Second)
-
 	assert.NoError(t, changeErr)
 
 	// Fetch new exit IP address
