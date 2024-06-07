@@ -5,18 +5,28 @@ import (
 	"github.com/mguley/web-scraper-v1/config"
 	"github.com/mguley/web-scraper-v1/internal/tor/builders"
 	"github.com/mguley/web-scraper-v1/internal/tor/commands"
+	"math"
 	"net/http"
 	"time"
 )
 
 const (
-	attempts     = 5
-	sleepTimeout = 10 * time.Second
-	signal       = "NEWNYM"
+	maxAttempts     = 5
+	initialWaitTime = 5 * time.Second
+	signal          = "NEWNYM"
 )
 
 // ChangeIdentity changes the Tor identity by connecting to the Tor control port and sending the 'NEWNYM' signal.
-// It attempts to ensure that the exit IP address is changed.
+// It attempts to ensure that the exit IP address is changed by using an exponential backoff strategy.
+//
+// This function performs the following steps:
+// 1. Borrow a Tor connection from the pool.
+// 2. Fetch the initial exit IP address to compare later.
+// 3. Set up a control connection to the Tor control port and authenticate.
+// 4. Send the 'NEWNYM' signal to request a new identity.
+// 5. Wait for a dynamically increasing period before checking the new IP address, using exponential backoff.
+// 6. Fetch the new exit IP address and compare it with the initial IP.
+// 7. Retry up to a maximum number of attempts if the IP address has not changed, doubling the wait time after each attempt.
 //
 // Parameters:
 // - torPool: A pointer to the TorPool instance.
@@ -48,11 +58,12 @@ func ChangeIdentity(torPool *Pool, proxyConfig *config.TorProxyConfig) error {
 
 	sendSignalCmd := &commands.SendSignalCommand{Builder: builder, Signal: signal}
 
-	for attempt := 0; attempt < attempts; attempt++ {
+	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if signalCmdErr := sendSignalCmd.Execute(); signalCmdErr != nil {
 			return fmt.Errorf("failed to send NEWNYM signal: %w", signalCmdErr)
 		}
-		time.Sleep(sleepTimeout) // Wait for the new identity to take effect
+		waitTime := time.Duration(math.Pow(2, float64(attempt))) * initialWaitTime
+		time.Sleep(waitTime) // Exponential backoff
 
 		// Fetch the new exit IP address
 		newIP, err := fetchExitIP(conn.HttpClient, proxyConfig.VerifyUrl)
@@ -72,6 +83,7 @@ func ChangeIdentity(torPool *Pool, proxyConfig *config.TorProxyConfig) error {
 }
 
 // fetchExitIP fetches the current public IP address using the provided HTTP client.
+// It sends a request to the specified URL using the provided HTTP client and returns the IP address found in the response.
 //
 // Parameters:
 // - httpClient: The *http.Client to use for making the request.
