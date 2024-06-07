@@ -5,6 +5,7 @@ import (
 	"github.com/mguley/web-scraper-v1/config"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // Facade provides a simplified interface for interacting with the Tor network.
@@ -107,5 +108,14 @@ func (torFacade *Facade) FetchExitIP(url string) (string, error) {
 // Returns:
 // - error: An error if the identity could not be changed.
 func (torFacade *Facade) ChangeIdentity() error {
-	return ChangeIdentity(torFacade.torPool, torFacade.proxyConfig)
+	retryStrategy := &ExponentialBackoff{initialWaitTime: 5 * time.Second}
+	maxAttempts := 5
+
+	identityChanger := NewIdentityChanger(
+		torFacade.torPool,
+		torFacade.proxyConfig,
+		retryStrategy,
+		maxAttempts)
+
+	return identityChanger.ChangeIdentity()
 }
