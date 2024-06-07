@@ -11,7 +11,7 @@ import (
 
 const (
 	timeout  = 10 * time.Second
-	poolSize = 2
+	poolSize = 5
 )
 
 var (
