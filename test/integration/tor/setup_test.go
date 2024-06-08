@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	timeout  = 10 * time.Second
-	poolSize = 5
+	timeout            = 10 * time.Second
+	poolSize           = 5
+	poolTimeout        = 30 * time.Second
+	poolRecycleTimeout = 2 * time.Minute
 )
 
 var (
