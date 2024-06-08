@@ -27,7 +27,7 @@ type Facade struct {
 // - *Facade: A pointer to the newly created Facade instance.
 // - error: An error if the pool could not be initialized.
 func NewTorFacade(proxyConfig *config.TorProxyConfig, poolSize int) (*Facade, error) {
-	torPool, err := NewTorPool(proxyConfig, poolSize)
+	torPool, err := NewTorPool(proxyConfig, poolSize, time.Second*30, time.Minute*5)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Tor pool: %w", err)
 	}
