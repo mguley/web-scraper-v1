@@ -1,15 +1,20 @@
 package message
 
-import "github.com/mguley/web-scraper-v1/internal/model"
-
 // Consumer defines the interface for consuming messages from RabbitMQ.
-// This abstraction ensures that job postings are correctly received from the message broker.
-type Consumer interface {
-	// Consume starts the consumption of job posting messages from RabbitMQ.
-	// It returns a channel of Job objects and an error if the consumption setup fails.
+// This interface abstracts the process of receiving job postings from the message broker.
+type Consumer[T any] interface {
+	// Consume starts the consumption of messages from RabbitMQ.
+	// It returns a channel of T objects and an error if the consumption setup fails.
 	//
 	// Returns:
-	// - <-chan model.Job: A receive-only channel from which Job objects can be read.
+	// - <-chan T: A receive-only channel from which T objects can be read.
 	// - error: An error object if there is a failure in setting up the consumer, otherwise nil.
-	Consume() (<-chan model.Job, error)
+	Consume() (<-chan T, error)
+
+	// Close gracefully closes the connection and channel.
+	// It ensures that any resources associated with the consumer are properly released.
+	//
+	// Returns:
+	// - error: An error object if there is a failure in closing the consumer, otherwise nil.
+	Close() error
 }
