@@ -19,6 +19,19 @@ services:
       scraper_network:
         ipv4_address: 220.45.0.3
 
+  test_rabbit_mq:
+    container_name: test_rabbit_mq
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+    networks:
+      scraper_network:
+        ipv4_address: 220.45.0.4
+
 
 
 networks:

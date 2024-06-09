@@ -38,7 +38,16 @@ jobs:
           echo "Waiting for Tor proxy..."
           sleep 5
         done
-        echo "Tor proxy is ready."        
+        echo "Tor proxy is ready."   
+
+    - name: Wait for RabbitMQ to be ready
+      run: |
+        echo "Waiting for RabbitMQ to be ready..."
+        until curl -u user:pass http://220.45.0.4:15672/api/overview > /dev/null 2>&1; do
+          echo "Waiting for RabbitMQ..."
+          sleep 5
+        done
+        echo "RabbitMQ is ready."        
 
     - name: Run integration tests
       run: |
@@ -59,3 +68,11 @@ jobs:
     - name: Inspect Tor proxy container if tests fail
       if: failure()
       run: docker inspect test_tor_proxy
+
+    - name: Capture RabbitMQ logs if tests fail
+      if: failure()
+      run: docker logs test_rabbit_mq
+
+    - name: Inspect RabbitMQ container if tests fail
+      if: failure()
+      run: docker inspect test_rabbit_mq
