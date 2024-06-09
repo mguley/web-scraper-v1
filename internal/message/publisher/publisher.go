@@ -1,4 +1,4 @@
-package message
+package publisher
 
 // Publisher defines the interface for publishing messages to RabbitMQ.
 // This abstraction ensures that job postings are correctly sent to the message broker.

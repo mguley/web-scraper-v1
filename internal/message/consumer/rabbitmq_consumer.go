@@ -1,4 +1,4 @@
-package message
+package consumer
 
 import (
 	"encoding/json"

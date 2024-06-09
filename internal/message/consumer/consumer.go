@@ -1,4 +1,4 @@
-package message
+package consumer
 
 // Consumer defines the interface for consuming messages from RabbitMQ.
 // This interface abstracts the process of receiving job postings from the message broker.
