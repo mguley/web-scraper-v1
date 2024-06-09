@@ -31,7 +31,7 @@ func NewRabbitMQConsumer[T any](appConfig config.RabbitMQ) (*RabbitMQConsumer[T]
 	connString := fmt.Sprintf("amqp://%s:%s@%s:%s", appConfig.User, appConfig.Pass, appConfig.Host, appConfig.Port)
 	connection, channel, err := shared.SetupRabbitMQ(connString, appConfig.QueueName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to set up RabbitMQ: %w", err)
 	}
 
 	return &RabbitMQConsumer[T]{
@@ -47,9 +47,9 @@ func NewRabbitMQConsumer[T any](appConfig config.RabbitMQ) (*RabbitMQConsumer[T]
 // Returns:
 // - <-chan T: A receive-only channel from which T objects can be read.
 // - error: An error if there is an issue setting up the consumer.
-func (rabbitMQ *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
-	messages, err := rabbitMQ.Channel.Consume(
-		rabbitMQ.QueueName, // queue
+func (consumer *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
+	messages, err := consumer.Channel.Consume(
+		consumer.QueueName, // queue
 		"",                 // consumer
 		true,               // auto-ack
 		false,              // exclusive
@@ -58,12 +58,12 @@ func (rabbitMQ *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
 		nil,                // arguments
 	)
 	if err != nil {
-		rabbitMQ.logError(fmt.Errorf("failed to start consuming messages: %w", err))
+		consumer.logError(fmt.Errorf("failed to start consuming messages: %w", err))
 		return nil, err
 	}
 
 	out := make(chan T)
-	go rabbitMQ.handleMessages(messages, out)
+	go consumer.handleMessages(messages, out)
 	return out, nil
 }
 
@@ -72,16 +72,16 @@ func (rabbitMQ *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
 // Parameters:
 // - messages <-chan amqp091.Delivery: Channel of messages to be consumed.
 // - out chan<- T: Channel to output unmarshalled messages.
-func (rabbitMQ *RabbitMQConsumer[T]) handleMessages(messages <-chan amqp091.Delivery, out chan<- T) {
+func (consumer *RabbitMQConsumer[T]) handleMessages(messages <-chan amqp091.Delivery, out chan<- T) {
 	defer close(out)
 	for msg := range messages {
 		var item T
 		if err := json.Unmarshal(msg.Body, &item); err != nil {
-			rabbitMQ.logError(fmt.Errorf("failed to unmarshal message: %w", err))
+			consumer.logError(fmt.Errorf("failed to unmarshal message: %w", err))
 			continue
 		}
 		out <- item
-		rabbitMQ.logInfo("Message pushed to channel")
+		consumer.logInfo("Message pushed to channel")
 	}
 }
 
@@ -90,16 +90,19 @@ func (rabbitMQ *RabbitMQConsumer[T]) handleMessages(messages <-chan amqp091.Deli
 //
 // This method should be called when the RabbitMQConsumer instance is no longer needed, to ensure
 // that connections are properly closed and resources are freed.
-func (rabbitMQ *RabbitMQConsumer[T]) Close() error {
+//
+// Returns:
+// - error: An error object if there is a failure in closing the connection or channel, otherwise nil.
+func (consumer *RabbitMQConsumer[T]) Close() error {
 	var errors []error
 
-	if closeChannelErr := rabbitMQ.Channel.Close(); closeChannelErr != nil {
-		rabbitMQ.logError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
+	if closeChannelErr := consumer.Channel.Close(); closeChannelErr != nil {
+		consumer.logError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
 		errors = append(errors, closeChannelErr)
 	}
 
-	if closeConnErr := rabbitMQ.Channel.Close(); closeConnErr != nil {
-		rabbitMQ.logError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
+	if closeConnErr := consumer.Channel.Close(); closeConnErr != nil {
+		consumer.logError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
 		errors = append(errors, closeConnErr)
 	}
 
@@ -114,14 +117,14 @@ func (rabbitMQ *RabbitMQConsumer[T]) Close() error {
 //
 // Parameters:
 // - err error: The error to log.
-func (rabbitMQ *RabbitMQConsumer[T]) logError(err error) {
-	rabbitMQ.logger.LogError(err)
+func (consumer *RabbitMQConsumer[T]) logError(err error) {
+	consumer.logger.LogError(err)
 }
 
 // logInfo logs an informational message using the consumer's logger.
 //
 // Parameters:
 // - message string: The message to log.
-func (rabbitMQ *RabbitMQConsumer[T]) logInfo(message string) {
-	rabbitMQ.logger.LogInfo(message)
+func (consumer *RabbitMQConsumer[T]) logInfo(message string) {
+	consumer.logger.LogInfo(message)
 }
