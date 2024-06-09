@@ -1,4 +1,4 @@
-package tor
+package message
 
 import (
 	"flag"
@@ -6,14 +6,6 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
-)
-
-const (
-	timeout            = 10 * time.Second
-	poolSize           = 5
-	poolTimeout        = 30 * time.Second
-	poolRecycleTimeout = 2 * time.Minute
 )
 
 var (
@@ -46,10 +38,7 @@ func setup() {
 }
 
 // teardown performs any necessary cleanup after tests are executed.
-// This function is currently a placeholder for future cleanup logic.
-func teardown() {
-	// Add any necessary cleanup here
-}
+func teardown() {}
 
 // TestMain is the entry point for the test suite.
 // It parses command-line flags, sets up the global configuration, runs the tests, and performs cleanup.
