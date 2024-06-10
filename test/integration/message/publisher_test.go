@@ -141,3 +141,27 @@ func TestConcurrency(t *testing.T) {
 
 	require.Len(t, receivedMessages, messageCount, "The number of messages received should be equal to the number of messages sent")
 }
+
+// TestCloseFunction verifies that the Close function works correctly.
+// It ensures that the connection and channel are properly closed without errors.
+//
+// Parameters:
+// - t *testing.T: The testing framework's instance.
+func TestCloseFunction(t *testing.T) {
+	pub, cleanup := setupRabbitMQ(t)
+	defer cleanup()
+
+	// Check that the connection and channel are open
+	require.NotNil(t, pub.Connection, "RabbitMQ connection should be established")
+	require.NotNil(t, pub.Channel, "RabbitMQ channel should be established")
+
+	// Close the publisher
+	closeErr := pub.Close()
+	assert.NoError(t, closeErr, "Closing the publisher should not produce an error")
+
+	// Check that the connection and channel are closed
+	connErr := pub.Connection.Close()
+	assert.Error(t, connErr, "The connection should already be closed")
+	channelErr := pub.Channel.Close()
+	assert.Nil(t, channelErr, "The channel should already be closed")
+}
