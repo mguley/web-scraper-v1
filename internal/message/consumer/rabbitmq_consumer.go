@@ -58,7 +58,7 @@ func (consumer *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
 		nil,                // arguments
 	)
 	if err != nil {
-		consumer.logError(fmt.Errorf("failed to start consuming messages: %w", err))
+		consumer.LogError(fmt.Errorf("failed to start consuming messages: %w", err))
 		return nil, err
 	}
 
@@ -77,11 +77,11 @@ func (consumer *RabbitMQConsumer[T]) handleMessages(messages <-chan amqp091.Deli
 	for msg := range messages {
 		var item T
 		if err := json.Unmarshal(msg.Body, &item); err != nil {
-			consumer.logError(fmt.Errorf("failed to unmarshal message: %w", err))
+			consumer.LogError(fmt.Errorf("failed to unmarshal message: %w", err))
 			continue
 		}
 		out <- item
-		consumer.logInfo("Message pushed to channel")
+		consumer.LogInfo("Message pushed to channel")
 	}
 }
 
@@ -97,12 +97,12 @@ func (consumer *RabbitMQConsumer[T]) Close() error {
 	var errors []error
 
 	if closeChannelErr := consumer.Channel.Close(); closeChannelErr != nil {
-		consumer.logError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
+		consumer.LogError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
 		errors = append(errors, closeChannelErr)
 	}
 
 	if closeConnErr := consumer.Channel.Close(); closeConnErr != nil {
-		consumer.logError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
+		consumer.LogError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
 		errors = append(errors, closeConnErr)
 	}
 
@@ -113,18 +113,18 @@ func (consumer *RabbitMQConsumer[T]) Close() error {
 	return nil
 }
 
-// logError logs an error message using the consumer's logger.
+// LogError logs an error message using the consumer's logger.
 //
 // Parameters:
 // - err error: The error to log.
-func (consumer *RabbitMQConsumer[T]) logError(err error) {
+func (consumer *RabbitMQConsumer[T]) LogError(err error) {
 	consumer.logger.LogError(err)
 }
 
-// logInfo logs an informational message using the consumer's logger.
+// LogInfo logs an informational message using the consumer's logger.
 //
 // Parameters:
 // - message string: The message to log.
-func (consumer *RabbitMQConsumer[T]) logInfo(message string) {
+func (consumer *RabbitMQConsumer[T]) LogInfo(message string) {
 	consumer.logger.LogInfo(message)
 }

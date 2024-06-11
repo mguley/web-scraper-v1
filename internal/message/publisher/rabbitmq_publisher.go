@@ -53,7 +53,7 @@ func NewRabbitMQPublisher[T any](appConfig config.RabbitMQ) (*RabbitMQPublisher[
 func (publisher *RabbitMQPublisher[T]) Publish(message T) error {
 	body, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
-		publisher.logError(fmt.Errorf("failed to marshal message: %w", marshalErr))
+		publisher.LogError(fmt.Errorf("failed to marshal message: %w", marshalErr))
 		return marshalErr
 	}
 
@@ -71,11 +71,11 @@ func (publisher *RabbitMQPublisher[T]) Publish(message T) error {
 	)
 
 	if publishErr != nil {
-		publisher.logError(fmt.Errorf("failed to publish message: %w", publishErr))
+		publisher.LogError(fmt.Errorf("failed to publish message: %w", publishErr))
 		return publishErr
 	}
 
-	publisher.logInfo("Message published to queue")
+	publisher.LogInfo("Message published to queue")
 	return nil
 }
 
@@ -91,12 +91,12 @@ func (publisher *RabbitMQPublisher[T]) Close() error {
 	var errors []error
 
 	if closeChannelErr := publisher.Channel.Close(); closeChannelErr != nil {
-		publisher.logError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
+		publisher.LogError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
 		errors = append(errors, closeChannelErr)
 	}
 
 	if closeConnErr := publisher.Connection.Close(); closeConnErr != nil {
-		publisher.logError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
+		publisher.LogError(fmt.Errorf("failed to close RabbitMQ connection: %w", closeConnErr))
 		errors = append(errors, closeConnErr)
 	}
 
@@ -107,18 +107,18 @@ func (publisher *RabbitMQPublisher[T]) Close() error {
 	return nil
 }
 
-// logError logs an error message using the publisher's logger.
+// LogError logs an error message using the publisher's logger.
 //
 // Parameters:
 // - err error: The error to log.
-func (publisher *RabbitMQPublisher[T]) logError(err error) {
+func (publisher *RabbitMQPublisher[T]) LogError(err error) {
 	publisher.logger.LogError(err)
 }
 
-// logInfo logs an informational message using the publisher's logger.
+// LogInfo logs an informational message using the publisher's logger.
 //
 // Parameters:
 // - message string: The message to log.
-func (publisher *RabbitMQPublisher[T]) logInfo(message string) {
+func (publisher *RabbitMQPublisher[T]) LogInfo(message string) {
 	publisher.logger.LogInfo(message)
 }
