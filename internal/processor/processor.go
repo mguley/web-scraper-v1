@@ -24,7 +24,10 @@ type Processor[T any] interface {
 	// - item string: The raw string data that needs to be processed. This could be any form of text, such as JSON,
 	//                XML, plain text, etc., depending on the specific implementation of the processor. If the processing
 	//                is unsuccessful, this will be nil.
-	// - error: An error object that encapsulates any issue that occurred during the processing. If the processing is
-	//          successful, this will be nil.
+	//
+	// Returns:
+	// - *T: A pointer to the result of type T, which represents the processed data. If the processing is unsuccessful,
+	//       this will be nil.
+	// - error: An error object that encapsulates any issue that occurred during the processing.
 	Process(item string) (*T, error)
 }
