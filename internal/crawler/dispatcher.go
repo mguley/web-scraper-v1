@@ -69,8 +69,10 @@ func (dispatcher *Dispatcher[T]) dispatch() {
 			if !more {
 				return // Exit dispatch loop if no more units are available.
 			}
-			dispatcher.WorkerManager.AssignUnit(unit)
-			batchCount++
+			err := dispatcher.WorkerManager.AssignUnit(unit)
+			if err != nil {
+				continue // Skip to the next unit if there was an error assigning the current one
+			}
 		}
 
 		dispatcher.WorkerManager.WaitForBatchCompletion()

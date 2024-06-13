@@ -1,8 +1,10 @@
 package crawler
 
 import (
+	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/processor"
 	"sync"
+	"time"
 )
 
 // WorkerManager manages the lifecycle and operations of a pool of workers that process units of work.
@@ -58,9 +60,44 @@ func (workerManager *WorkerManager[T]) Start() {
 }
 
 // AssignUnit sends a unit of work to an available worker for processing.
-func (workerManager *WorkerManager[T]) AssignUnit(unit Unit) {
-	workerChannel := <-workerManager.WorkerQueue
-	workerChannel <- unit
+// It ensures that a worker is available before assigning the unit and logs the process.
+// It uses a timeout to avoid blocking indefinitely if no worker is available.
+//
+// Parameters:
+// - unit Unit: The unit of work to be processed, containing the URL to be processed.
+//
+// Returns:
+// - error: An error if no available worker is found within the timeout period or if the unit cannot be assigned.
+func (workerManager *WorkerManager[T]) AssignUnit(unit Unit) error {
+	select {
+	case workerChannel, ok := <-workerManager.WorkerQueue:
+		if !ok {
+			return fmt.Errorf("worker queue closed, cannot assign unit: %s", unit.URL)
+		}
+		select {
+		case workerChannel <- unit:
+			fmt.Printf("assigned unit to worker: %s\n", unit.URL)
+		case <-time.After(time.Second * 3):
+			return fmt.Errorf("timeout while assigning unit to worker: %s", unit.URL)
+		}
+	case <-time.After(time.Second * 3):
+		return fmt.Errorf("no available workers to assign unit: %s", unit.URL)
+	}
+	return nil
+}
+
+// GetWorkers returns a copy of the slice of workers managed by this WorkerManager.
+// It ensures that the returned slice is immutable from the caller's perspective.
+//
+// By providing a copy of the workers slice, this method ensures that any modifications
+// made to the returned slice do not affect the original workers slice within the WorkerManager.
+//
+// Returns:
+// - []*Worker[T]: A copy of the slice of workers managed by this WorkerManager.
+func (workerManager *WorkerManager[T]) GetWorkers() []*Worker[T] {
+	workersCopy := make([]*Worker[T], len(workerManager.workers))
+	copy(workersCopy, workerManager.workers)
+	return workersCopy
 }
 
 // WaitForBatchCompletion waits for the completion of processing for all units in the current batch.
@@ -76,8 +113,10 @@ func (workerManager *WorkerManager[T]) WaitForBatchCompletion() {
 
 // Stop terminates all workers managed by this manager and cleans up resources.
 func (workerManager *WorkerManager[T]) Stop() {
+	// Wait for all workers to finish their tasks
+	workerManager.batchWaitGroup.Wait()
+
 	for _, worker := range workerManager.workers {
 		worker.Stop()
 	}
-	close(workerManager.UnitQueue) // Signal that no more units will be dispatched.
 }
