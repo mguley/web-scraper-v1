@@ -174,10 +174,24 @@ func TestWorkerManagerStop(t *testing.T) {
 		{URL: "https://ex.com/3"},
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(len(units))
+
+	go func() {
+		for range units {
+			<-manager.BatchDone
+			wg.Done()
+		}
+	}()
+
 	for _, unit := range units {
 		err := manager.AssignUnit(unit)
 		require.NoError(t, err, fmt.Sprintf("failed to assign unit: %v", unit.URL))
 	}
+
+	// Wait for all units to be processed
+	wg.Wait()
+	require.Equal(t, 0, len(manager.BatchDone), "not all units were processed")
 
 	// Stop the WorkerManager and ensure all workers are terminated
 	manager.Stop()
