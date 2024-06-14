@@ -34,6 +34,7 @@ func (dummyWorkerProcessor *DummyWorkerProcessor) Process(url string) (*model.Jo
 // Parameters:
 // - t *testing.T: The testing context.
 func TestWorkerStart(t *testing.T) {
+	t.Parallel() // Run this test in parallel to ensure isolation
 	unitsToProcess := 10
 	workerCount := 5
 	workerQueue := make(chan chan crawler.Unit, workerCount)
@@ -84,6 +85,7 @@ func TestWorkerStart(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing context.
 func TestWorkerMemoryUsage(t *testing.T) {
+	t.Parallel() // Run this test in parallel to ensure isolation
 	unitsToProcess := 150_000
 	workerCount := 25_000
 	workerQueue := make(chan chan crawler.Unit, workerCount)
@@ -152,6 +154,7 @@ func TestWorkerMemoryUsage(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing context.
 func TestWorkerStop(t *testing.T) {
+	t.Parallel() // Run this test in parallel to ensure isolation
 	workerQueue := make(chan chan crawler.Unit)
 	batchDone := make(chan bool)
 	processor := &DummyWorkerProcessor{}
