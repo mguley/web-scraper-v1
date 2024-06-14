@@ -76,7 +76,8 @@ func (workerManager *WorkerManager[T]) AssignUnit(unit Unit) error {
 		}
 		select {
 		case workerChannel <- unit:
-			fmt.Printf("assigned unit to worker: %s\n", unit.URL)
+			// todo forward to log file
+			//fmt.Printf("assigned unit to worker: %s\n", unit.URL)
 		case <-time.After(time.Second * 3):
 			return fmt.Errorf("timeout while assigning unit to worker: %s", unit.URL)
 		}
