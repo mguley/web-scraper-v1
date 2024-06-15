@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"context"
 	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/crawler"
 	"github.com/mguley/web-scraper-v1/internal/model"
@@ -39,11 +40,85 @@ func (simpleProcessor *SimpleDummyProcessor) Process(url string) (*model.Job, er
 // - *crawler.WorkerManager[model.Job]: The initialized WorkerManager instance.
 // - *crawler.DispatcherConfig: The configuration used for the WorkerManager.
 func setupManager(t *testing.T) (*crawler.WorkerManager[model.Job], *crawler.DispatcherConfig) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
 	config := crawler.DispatcherConfig{MaxWorkers: 5, BatchLimit: 10}
 	dummyProcessor := &SimpleDummyProcessor{}
-	manager := crawler.NewWorkerManager[model.Job](config, dummyProcessor)
+	manager := crawler.NewWorkerManager[model.Job](ctx, config, dummyProcessor)
 	require.NotNil(t, manager)
 	return manager, &config
+}
+
+// TestWorkerManagerCancellation verifies the WorkerManager's response to context cancellation.
+// It ensures the WorkerManager stops processing units when the context is cancelled.
+//
+// Steps:
+// - Initialize the WorkerManager with a context and configuration.
+// - Start the WorkerManager.
+// - Create a large number of units to be processed.
+// - Send units to available workers for processing.
+// - Cancel the context after a short delay.
+// - Verify that the WorkerManager stops processing and shuts down correctly.
+//
+// Parameters:
+// - t *testing.T: The testing context.
+func TestWorkerManagerCancellation(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	t.Cleanup(cancel)
+
+	config := crawler.DispatcherConfig{MaxWorkers: 100, BatchLimit: 100}
+	dummyProcessor := &SimpleDummyProcessor{}
+	manager := crawler.NewWorkerManager[model.Job](ctx, config, dummyProcessor)
+	require.NotNil(t, manager)
+
+	manager.Start()
+
+	processedUnits := 0
+	unitCount := 10_000
+	units := make([]crawler.Unit, unitCount)
+	for i := 0; i < unitCount; i++ {
+		units[i] = crawler.Unit{URL: fmt.Sprintf("https://example.com/%d", i)}
+	}
+
+	// Push units into the WorkerManager's UnitQueue
+	go func() {
+		for _, unit := range units {
+			if assignErr := manager.AssignUnit(unit); assignErr != nil {
+				t.Log(assignErr)
+				return
+			}
+		}
+	}()
+
+	// Monitor BatchDone signals
+	go func() {
+		for range units {
+			<-manager.BatchDone
+			processedUnits++
+		}
+	}()
+
+	// Cancel the context after a short delay
+	time.AfterFunc(2*time.Second, cancel)
+
+	// Wait to ensure the manager has responded to the cancellation
+	<-ctx.Done()
+
+	// Verify that the manager has stopped processing
+	select {
+	case <-ctx.Done():
+		t.Log("Manager context cancelled as expected")
+		t.Logf("Processed units %v", processedUnits)
+	default:
+		t.Fatal("Manager context should be cancelled")
+	}
+
+	// Verify the worker manager has stopped
+	manager.Stop()
+	require.NotEqual(t, unitCount, processedUnits, "The initial unit count should not match processed units due to the cancellation")
+	require.Empty(t, manager.UnitQueue, "UnitQueue should be empty after manager stops")
 }
 
 // TestWorkerManagerInitialization tests the initialization of a WorkerManager instance.

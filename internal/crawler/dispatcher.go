@@ -54,7 +54,7 @@ func NewDispatcher[T any](ctx context.Context, config DispatcherConfig, processo
 	torFacade *tor.Facade) *Dispatcher[T] {
 
 	ctx, cancel := context.WithCancel(ctx)
-	workerManager := NewWorkerManager[T](config, processor) // todo integrate ctx
+	workerManager := NewWorkerManager[T](ctx, config, processor)
 	return &Dispatcher[T]{
 		WorkerManager: workerManager,
 		Processor:     processor,
