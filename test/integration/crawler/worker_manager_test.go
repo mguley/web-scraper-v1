@@ -5,6 +5,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/crawler"
 	"github.com/mguley/web-scraper-v1/internal/model"
 	"github.com/stretchr/testify/require"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -73,26 +74,25 @@ func TestWorkerManagerInitialization(t *testing.T) {
 //
 // Parameters:
 // - t *testing.T: The testing context.
-//func TestWorkerManagerStart(t *testing.T) {
-//	t.Parallel() // Run this test in parallel to ensure isolation
-//	manager, config := setupManager(t)
-//	require.NotNil(t, manager)
-//	require.NotNil(t, config)
+func TestWorkerManagerStart(t *testing.T) {
+	manager, config := setupManager(t)
+	require.NotNil(t, manager)
+	require.NotNil(t, config)
 
-//	initialGoroutines := runtime.NumGoroutine()
-//	manager.Start()
-//	defer manager.Stop()
+	initialGoroutines := runtime.NumGoroutine()
+	manager.Start()
+	defer manager.Stop()
 
-//	require.Equal(t, config.MaxWorkers, len(manager.GetWorkers()),
-//		fmt.Sprintf("expected %d workers, got %d", config.MaxWorkers, len(manager.GetWorkers())))
+	require.Equal(t, config.MaxWorkers, len(manager.GetWorkers()),
+		fmt.Sprintf("expected %d workers, got %d", config.MaxWorkers, len(manager.GetWorkers())))
 
-// Allow some time for goroutines to start
-//	time.Sleep(2 * time.Second)
+	// Allow some time for goroutines to start
+	time.Sleep(2 * time.Second)
 
-//	currentGoroutines := runtime.NumGoroutine()
-//	require.Equal(t, initialGoroutines+config.MaxWorkers, currentGoroutines,
-//		fmt.Sprintf("expected %d goroutines, got %d", initialGoroutines+config.MaxWorkers, currentGoroutines))
-//}
+	currentGoroutines := runtime.NumGoroutine()
+	require.Equal(t, initialGoroutines+config.MaxWorkers, currentGoroutines,
+		fmt.Sprintf("expected %d goroutines, got %d", initialGoroutines+config.MaxWorkers, currentGoroutines))
+}
 
 // TestAssignUnit tests the AssignUnit functionality of the WorkerManager.
 // This test ensures that units of work are correctly assigned to workers and processed.
