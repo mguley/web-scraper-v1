@@ -75,7 +75,6 @@ func setupJobProcessor(t *testing.T) (*processor.JobProcessor[model.Job], func()
 // Parameters:
 // - t *testing.T: The testing context.
 func TestJobProcessorIntegration(t *testing.T) {
-	t.Parallel()
 	jobProcessor, cleanup, url, _ := setupJobProcessor(t)
 	defer cleanup()
 	require.NotNil(t, jobProcessor)
@@ -98,7 +97,6 @@ func TestJobProcessorIntegration(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing context.
 func TestJobProcessorCancellation(t *testing.T) {
-	t.Parallel()
 	jobProcessor, cleanup, url, _ := setupJobProcessor(t)
 	defer cleanup()
 	require.NotNil(t, jobProcessor)
@@ -117,7 +115,6 @@ func TestJobProcessorCancellation(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing context.
 func TestJobProcessorTimeout(t *testing.T) {
-	t.Parallel()
 	jobProcessor, cleanup, _, delayUrl := setupJobProcessor(t)
 	defer cleanup()
 	require.NotNil(t, jobProcessor)
