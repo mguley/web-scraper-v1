@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"context"
 	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/crawler"
 	"github.com/mguley/web-scraper-v1/internal/model"
@@ -34,9 +35,10 @@ func (dummyWorkerProcessor *DummyWorkerProcessor) Process(url string) (*model.Jo
 // Parameters:
 // - t *testing.T: The testing context.
 func TestWorkerStart(t *testing.T) {
-	t.Parallel() // Run this test in parallel to ensure isolation
+	t.Parallel()
 	unitsToProcess := 10
 	workerCount := 5
+	ctx := context.Background()
 	workerQueue := make(chan chan crawler.Unit, workerCount)
 	batchDone := make(chan bool, unitsToProcess)
 	processor := &DummyWorkerProcessor{}
@@ -44,7 +46,7 @@ func TestWorkerStart(t *testing.T) {
 
 	// Create and start multiple workers
 	for i := 0; i < workerCount; i++ {
-		worker := crawler.NewWorker[model.Job](i, workerQueue, processor, batchDone)
+		worker := crawler.NewWorker[model.Job](ctx, i, workerQueue, processor, batchDone)
 		go worker.Start()
 		workers = append(workers, worker)
 	}
@@ -88,6 +90,7 @@ func TestWorkerMemoryUsage(t *testing.T) {
 	t.Parallel() // Run this test in parallel to ensure isolation
 	unitsToProcess := 150_000
 	workerCount := 25_000
+	ctx := context.Background()
 	workerQueue := make(chan chan crawler.Unit, workerCount)
 	batchDone := make(chan bool, unitsToProcess)
 	processor := &DummyWorkerProcessor{}
@@ -101,7 +104,7 @@ func TestWorkerMemoryUsage(t *testing.T) {
 
 	// Create and start multiple workers
 	for i := 0; i < workerCount; i++ {
-		worker := crawler.NewWorker[model.Job](i, workerQueue, processor, batchDone)
+		worker := crawler.NewWorker[model.Job](ctx, i, workerQueue, processor, batchDone)
 		go worker.Start()
 		workers = append(workers, worker)
 	}
@@ -155,10 +158,11 @@ func TestWorkerMemoryUsage(t *testing.T) {
 // - t *testing.T: The testing context.
 func TestWorkerStop(t *testing.T) {
 	t.Parallel() // Run this test in parallel to ensure isolation
+	ctx := context.Background()
 	workerQueue := make(chan chan crawler.Unit)
 	batchDone := make(chan bool)
 	processor := &DummyWorkerProcessor{}
-	worker := crawler.NewWorker[model.Job](1, workerQueue, processor, batchDone)
+	worker := crawler.NewWorker[model.Job](ctx, 1, workerQueue, processor, batchDone)
 
 	go worker.Start()
 

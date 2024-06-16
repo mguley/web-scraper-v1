@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"context"
 	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/processor"
 )
@@ -27,6 +28,7 @@ type Unit struct {
 // - QuitChan chan bool: Channel for signaling the worker to stop.
 // - Processor processor.Processor[T]: Job processor to handle job processing logic.
 // - BatchDone chan bool: Channel for signaling the completion of a unit.
+// - ctx context.Context: Context for managing cancellation.
 //
 // Methods:
 // - NewWorker: Constructs a new Worker with a specified ID, worker queue, job processor, and batch done channel.
@@ -39,11 +41,13 @@ type Worker[T any] struct {
 	QuitChan    chan bool
 	Processor   processor.Processor[T]
 	BatchDone   chan bool
+	ctx         context.Context
 }
 
 // NewWorker creates a new Worker instance with the given ID, worker queue, batch done channel, and job processor.
 //
 // Parameters:
+// - ctx context.Context: Context for managing cancellation.
 // - id int: Unique identifier for the worker.
 // - workerQueue chan chan Unit: Channel of channels for managing available workers.
 // - processor processor.Processor[T]: Job processor to handle job processing logic.
@@ -51,7 +55,7 @@ type Worker[T any] struct {
 //
 // Returns:
 // - *Worker[T]: A pointer to a new Worker instance.
-func NewWorker[T any](id int, workerQueue chan chan Unit, processor processor.Processor[T],
+func NewWorker[T any](ctx context.Context, id int, workerQueue chan chan Unit, processor processor.Processor[T],
 	batchDone chan bool) *Worker[T] {
 	return &Worker[T]{
 		ID:          id,
@@ -60,27 +64,36 @@ func NewWorker[T any](id int, workerQueue chan chan Unit, processor processor.Pr
 		QuitChan:    make(chan bool),
 		Processor:   processor,
 		BatchDone:   batchDone,
+		ctx:         ctx,
 	}
 }
 
 // Start begins the worker's job processing loop. The worker continuously registers itself in the WorkerQueue
 // and waits for units to process. Upon receiving a unit, it processes the unit using the job processor.
-// The worker can exit the loop if it receives a signal on the QuitChan.
+// The worker can exit the loop if it receives a signal on the QuitChan or the context is cancelled.
 func (worker *Worker[T]) Start() {
 	go func() {
 		for {
-			// Register the worker's unit channel in the WorkerQueue.
-			worker.WorkerQueue <- worker.UnitQueue
 			select {
-			case unit := <-worker.UnitQueue:
-				// When a unit is received, process it using the job processor.
-				_, processErr := worker.Processor.Process(unit.URL)
-				if processErr != nil {
-					fmt.Printf("Worker %d failed to process unit: %v\n", worker.ID, processErr)
+			// Register the worker's unit channel in the WorkerQueue.
+			case worker.WorkerQueue <- worker.UnitQueue:
+				select {
+				case unit := <-worker.UnitQueue:
+					// When a unit is received, process it using the job processor.
+					_, processErr := worker.Processor.Process(unit.URL)
+					if processErr != nil {
+						fmt.Printf("Worker %d failed to process unit: %v\n", worker.ID, processErr)
+					}
+					worker.BatchDone <- true // Signals that the unit is done
+				case <-worker.QuitChan:
+					//fmt.Printf("Worker %d quitting\n", worker.ID)
+					return
+				case <-worker.ctx.Done():
+					return
 				}
-				worker.BatchDone <- true // Signal the dispatcher that the unit is done
-			case <-worker.QuitChan:
-				// Exit the loop if a quit signal is received.
+			case <-worker.ctx.Done():
+				// Exit the loop if the context is cancelled.
+				//fmt.Printf("Worker %d context cancelled\n", worker.ID)
 				return
 			}
 		}
