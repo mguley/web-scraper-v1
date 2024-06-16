@@ -20,13 +20,18 @@ type DummyProcessor struct{}
 // It introduces a delay to simulate processing time.
 //
 // Parameters:
+// - ctx context.Context: The context for managing cancellation and deadlines.
 // - url string: The URL to be processed.
 //
 // Returns:
 // - *model.Job: Always returns nil for this dummy processor.
 // - error: Always returns nil for this dummy processor.
-func (dummyProcessor *DummyProcessor) Process(url string) (*model.Job, error) {
-	time.Sleep(100 * time.Millisecond)
+func (dummyProcessor *DummyProcessor) Process(ctx context.Context, url string) (*model.Job, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(100 * time.Millisecond):
+	}
 	return nil, nil
 }
 
@@ -121,9 +126,13 @@ func TestDispatcherTaskProcessing(t *testing.T) {
 	// Monitor BatchDone signals and decrement WaitGroup
 	go func() {
 		for range units {
-			<-dispatcher.WorkerManager.BatchDone
-			processedUnits++
-			wg.Done()
+			select {
+			case <-dispatcher.WorkerManager.BatchDone:
+				processedUnits++
+				wg.Done()
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
@@ -178,8 +187,12 @@ func TestDispatcherCancellation(t *testing.T) {
 	// Monitor BatchDone signals
 	go func() {
 		for range units {
-			<-dispatcher.WorkerManager.BatchDone
-			processedUnits++
+			select {
+			case <-dispatcher.WorkerManager.BatchDone:
+				processedUnits++
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 

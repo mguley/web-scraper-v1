@@ -2,7 +2,6 @@ package crawler
 
 import (
 	"context"
-	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/processor"
 )
 
@@ -80,9 +79,9 @@ func (worker *Worker[T]) Start() {
 				select {
 				case unit := <-worker.UnitQueue:
 					// When a unit is received, process it using the job processor.
-					_, processErr := worker.Processor.Process(unit.URL)
+					_, processErr := worker.Processor.Process(worker.ctx, unit.URL)
 					if processErr != nil {
-						fmt.Printf("Worker %d failed to process unit: %v\n", worker.ID, processErr)
+						//fmt.Printf("Worker %d failed to process unit: %v\n", worker.ID, processErr)
 					}
 					worker.BatchDone <- true // Signals that the unit is done
 				case <-worker.QuitChan:
