@@ -66,7 +66,7 @@ func (workerManager *WorkerManager[T]) Start() {
 		case <-workerManager.ctx.Done():
 			return // Exit if the context is cancelled
 		default:
-			worker := NewWorker[T](i, workerManager.WorkerQueue, workerManager.Processor, workerManager.BatchDone)
+			worker := NewWorker[T](workerManager.ctx, i, workerManager.WorkerQueue, workerManager.Processor, workerManager.BatchDone)
 			worker.Start()
 			workerManager.workers = append(workerManager.workers, worker)
 		}
