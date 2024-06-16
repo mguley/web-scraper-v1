@@ -20,13 +20,18 @@ type SimpleDummyProcessor struct{}
 // It introduces a delay to simulate processing time.
 //
 // Parameters:
+// - ctx context.Context: The context for managing cancellation and deadlines.
 // - url string: The URL to be processed.
 //
 // Returns:
 // - *model.Job: Always returns nil for this dummy processor.
 // - error: Always returns nil for this dummy processor.
-func (simpleProcessor *SimpleDummyProcessor) Process(url string) (*model.Job, error) {
-	time.Sleep(1 * time.Second) // Simulate processing time
+func (simpleProcessor *SimpleDummyProcessor) Process(ctx context.Context, url string) (*model.Job, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(1 * time.Second):
+	}
 	return nil, nil
 }
 

@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"fmt"
 	"github.com/mguley/web-scraper-v1/config"
 	"github.com/mguley/web-scraper-v1/internal/message/publisher"
@@ -61,13 +62,14 @@ func NewJobProcessor[T any](client *http.Client, brokerConfig config.RabbitMQ, p
 // step's success before proceeding to the next.
 //
 // Parameters:
+// - ctx context.Context: The context for managing cancellation and deadlines.
 // - url string: The URL of the web page to fetch and process.
 //
 // Returns:
 // - *T: A pointer to the structured data type T if processing is successful.
 // - error: An error detailing any issue that occurs during fetching, parsing, or publishing.
-func (jobProcessor *JobProcessor[T]) Process(url string) (*T, error) {
-	data, err := jobProcessor.fetchData(url)
+func (jobProcessor *JobProcessor[T]) Process(ctx context.Context, url string) (*T, error) {
+	data, err := jobProcessor.fetchData(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
@@ -88,15 +90,21 @@ func (jobProcessor *JobProcessor[T]) Process(url string) (*T, error) {
 // the response body if the request is successful.
 //
 // Parameters:
+// - ctx context.Context: The context for managing cancellation and deadlines.
 // - url string: The URL to fetch the data from.
 //
 // Returns:
 // - []byte: The raw HTML content of the fetched web page.
 // - error: An error object indicating a failure in the fetch operation.
-func (jobProcessor *JobProcessor[T]) fetchData(url string) ([]byte, error) {
-	response, err := jobProcessor.HttpClient.Get(url)
+func (jobProcessor *JobProcessor[T]) fetchData(ctx context.Context, url string) ([]byte, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	response, resErr := jobProcessor.HttpClient.Do(request)
+	if resErr != nil {
+		return nil, fmt.Errorf("failed to fetch data: %w", resErr)
 	}
 	defer func() {
 		if closeErr := response.Body.Close(); closeErr != nil {
@@ -105,7 +113,7 @@ func (jobProcessor *JobProcessor[T]) fetchData(url string) ([]byte, error) {
 	}()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-OK HTTP status: %d", response.StatusCode)
+		return nil, fmt.Errorf("failed to fetch data: status code %d", response.StatusCode)
 	}
 	return io.ReadAll(response.Body)
 }
