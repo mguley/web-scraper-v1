@@ -82,5 +82,6 @@ jobs:
           kubectl logs job/rabbitmq-readiness-check
 
       - name: Debugging - List all pods
+        if: always()
         run: |
-          kubectl get pods --all-namespaces          
+          kubectl get pods --all-namespaces    
