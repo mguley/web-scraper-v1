@@ -1,0 +1,105 @@
+name: Kind Integration Tests
+
+on:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: v0.23.0
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Verify Kubernetes Cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -A
+
+      - name: Debugging - List all resources
+        run: |
+          kubectl get all --all-namespaces
+
+      - name: Deploy MongoDB
+        run: kubectl apply -f .github/workflows/k8s/mongo-deployment.yml
+
+      - name: Wait for MongoDB pod to be ready
+        run: |
+          echo "Waiting for MongoDB pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=mongo --timeout=120s
+          echo "MongoDB pod is ready."
+
+      - name: MongoDB readiness check
+        run: |
+          echo "Checking if MongoDB is ready..."
+          until kubectl exec $(kubectl get pod -l app=mongo -o jsonpath="{.items[0].metadata.name}") -- mongosh --eval "db.runCommand({ ping: 1 })"; do
+            echo "Waiting for MongoDB to be ready..."
+            sleep 5
+          done
+          echo "MongoDB is ready."  
+
+      - name: Deploy RabbitMQ
+        run: kubectl apply -f .github/workflows/k8s/rabbitmq-deployment.yml
+
+      - name: Wait for RabbitMQ pod to be ready
+        run: |
+          echo "Waiting for RabbitMQ pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=240s
+          echo "RabbitMQ pod is ready."
+
+      - name: Create RabbitMQ readiness check job
+        run: |
+          kubectl delete job rabbitmq-readiness-check --ignore-not-found
+          kubectl apply -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: rabbitmq-readiness-check
+          spec:
+            template:
+              spec:
+                containers:
+                - name: curl
+                  image: appropriate/curl
+                  command: ["sh", "-c", "curl -u user:pass http://rabbitmq-service:15672/api/overview"]
+                restartPolicy: Never
+          EOF
+
+      - name: Wait for RabbitMQ readiness check job completion
+        run: |
+          kubectl wait --for=condition=complete job/rabbitmq-readiness-check --timeout=120s
+          kubectl logs job/rabbitmq-readiness-check
+
+      - name: Debugging - List all pods
+        if: always()
+        run: |
+          kubectl get pods --all-namespaces   
+
+      - name: Fetch RabbitMQ logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching RabbitMQ logs..."
+          for pod in $(kubectl get pods -l app=rabbitmq -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done
+
+      - name: Fetch MongoDB logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching MongoDB logs..."
+          for pod in $(kubectl get pods -l app=mongo -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done  
