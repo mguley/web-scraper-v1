@@ -84,4 +84,14 @@ jobs:
       - name: Debugging - List all pods
         if: always()
         run: |
-          kubectl get pods --all-namespaces    
+          kubectl get pods --all-namespaces   
+
+      - name: Fetch RabbitMQ logs in case of failure
+        if: failure()
+        run: |
+          kubectl logs -l app=rabbitmq --all-containers || true
+
+      - name: Fetch MongoDB logs in case of failure
+        if: failure()
+        run: |
+          kubectl logs -l app=mongo --all-containers || true          
