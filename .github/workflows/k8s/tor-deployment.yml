@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: tor
-          image: tor-proxy:latest # Use the locally built image
+          image: tor-proxy:unique-tag # Use the locally built image
           ports:
             - containerPort: 9050
             - containerPort: 9051
