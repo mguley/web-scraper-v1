@@ -16,9 +16,6 @@ jobs:
         with:
           version: v0.23.0
 
-      - name: Create Kind cluster
-        run: kind create cluster --wait 60s
-
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
         with:
