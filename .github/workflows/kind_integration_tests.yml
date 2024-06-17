@@ -61,7 +61,7 @@ jobs:
       - name: RabbitMQ readiness check
         run: |
           echo "Checking if RabbitMQ is ready..."
-          until kubectl exec $(kubectl get pod -l app=rabbitmq -o jsonpath="{.items[0].metadata.name}") -- curl -u user:pass http://localhost:15672/api/overview; do
+          until kubectl run curl-container --rm -i --tty --image=appropriate/curl -- bash -c "curl -u user:pass http://rabbitmq-service:15672/api/overview"; do
             echo "Waiting for RabbitMQ to be ready..."
             sleep 5
           done
