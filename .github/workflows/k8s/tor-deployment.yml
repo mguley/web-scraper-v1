@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tor-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tor
+  template:
+    metadata:
+      labels:
+        app: tor
+    spec:
+      containers:
+        - name: tor
+          image: tor-proxy:unique-tag # Use the locally built image
+          ports:
+            - containerPort: 9050
+            - containerPort: 9051
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  nc -zv localhost 9051
+            initialDelaySeconds: 45
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tor-service
+spec:
+  ports:
+    - port: 9050
+      targetPort: 9050
+      name: socks
+    - port: 9051
+      targetPort: 9051
+      name: control
+  selector:
+    app: tor
