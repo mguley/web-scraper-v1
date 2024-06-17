@@ -27,7 +27,7 @@ jobs:
 
       - name: Load Tor Proxy Docker Image into Kind
         run: |
-          kind load docker-image tor-proxy:latest          
+          kind load docker-image tor-proxy:unique-tag          
 
       - name: Verify Kubernetes Cluster
         run: |
