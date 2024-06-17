@@ -89,9 +89,17 @@ jobs:
       - name: Fetch RabbitMQ logs in case of failure
         if: failure()
         run: |
-          kubectl logs -l app=rabbitmq --all-containers || true
+          echo "Fetching RabbitMQ logs..."
+          for pod in $(kubectl get pods -l app=rabbitmq -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done
 
       - name: Fetch MongoDB logs in case of failure
         if: failure()
         run: |
-          kubectl logs -l app=mongo --all-containers || true          
+          echo "Fetching MongoDB logs..."
+          for pod in $(kubectl get pods -l app=mongo -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done  
