@@ -29,9 +29,9 @@ spec:
               port: 15672
               httpHeaders:
                 - name: Authorization
-                  value: Basic $(echo -n "user:pass" | base64)
-            initialDelaySeconds: 10
-            periodSeconds: 5
+                  value: Basic dXNlcjpwYXNz # Base64 encoded "user:pass"
+            initialDelaySeconds: 60
+            periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service

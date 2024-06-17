@@ -55,7 +55,7 @@ jobs:
       - name: Wait for RabbitMQ pod to be ready
         run: |
           echo "Waiting for RabbitMQ pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=120s
+          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=240s
           echo "RabbitMQ pod is ready."
 
       - name: Create RabbitMQ readiness check job
@@ -82,5 +82,24 @@ jobs:
           kubectl logs job/rabbitmq-readiness-check
 
       - name: Debugging - List all pods
+        if: always()
         run: |
-          kubectl get pods --all-namespaces          
+          kubectl get pods --all-namespaces   
+
+      - name: Fetch RabbitMQ logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching RabbitMQ logs..."
+          for pod in $(kubectl get pods -l app=rabbitmq -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done
+
+      - name: Fetch MongoDB logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching MongoDB logs..."
+          for pod in $(kubectl get pods -l app=mongo -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done  
