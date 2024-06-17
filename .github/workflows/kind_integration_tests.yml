@@ -58,14 +58,28 @@ jobs:
           kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=120s
           echo "RabbitMQ pod is ready."
 
-      - name: RabbitMQ readiness check
+      - name: Create RabbitMQ readiness check job
         run: |
-          echo "Checking if RabbitMQ is ready..."
-          until kubectl run curl-container --rm --image=appropriate/curl --command -- sh -c "response=$(curl -u user:pass http://rabbitmq-service:15672/api/overview); echo \$response; test -n \"\$response\""; do
-            echo "Waiting for RabbitMQ to be ready..."
-            sleep 5
-          done
-          echo "RabbitMQ is ready."          
+          kubectl delete job rabbitmq-readiness-check --ignore-not-found
+          kubectl apply -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: rabbitmq-readiness-check
+          spec:
+            template:
+              spec:
+                containers:
+                - name: curl
+                  image: appropriate/curl
+                  command: ["sh", "-c", "curl -u user:pass http://rabbitmq-service:15672/api/overview"]
+                restartPolicy: Never
+          EOF
+
+      - name: Wait for RabbitMQ readiness check job completion
+        run: |
+          kubectl wait --for=condition=complete job/rabbitmq-readiness-check --timeout=120s
+          kubectl logs job/rabbitmq-readiness-check
 
       - name: Debugging - List all pods
         run: |
