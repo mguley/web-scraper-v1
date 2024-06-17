@@ -23,11 +23,11 @@ jobs:
 
       - name: Build Tor Proxy Docker Image
         run: |
-          docker build -t tor-proxy:latest -f test/integration/docker/tor/Dockerfile .
+          docker build -t tor-proxy:unique-tag -f test/integration/docker/tor/Dockerfile test/integration/docker/tor
 
       - name: Load Tor Proxy Docker Image into Kind
         run: |
-          kind load docker-image tor-proxy:latest          
+          kind load docker-image tor-proxy:unique-tag          
 
       - name: Verify Kubernetes Cluster
         run: |
@@ -63,7 +63,7 @@ jobs:
       - name: Wait for RabbitMQ pod to be ready
         run: |
           echo "Waiting for RabbitMQ pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=240s
+          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=120s
           echo "RabbitMQ pod is ready."
 
       - name: Create RabbitMQ readiness check job
@@ -95,7 +95,7 @@ jobs:
       - name: Wait for Tor Proxy pod to be ready
         run: |
           echo "Waiting for Tor Proxy pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=tor --timeout=240s
+          kubectl wait --for=condition=Ready pod -l app=tor --timeout=120s
           echo "Tor Proxy pod is ready."        
 
       - name: Debugging - List all pods
