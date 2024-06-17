@@ -26,3 +26,29 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
           kubectl get pods -A
+
+      - name: Debugging - List all resources
+        run: |
+          kubectl get all --all-namespaces
+
+      - name: Deploy MongoDB
+        run: kubectl apply -f k8s/mongo-deployment.yml
+
+      - name: Wait for MongoDB pod to be ready
+        run: |
+          echo "Waiting for MongoDB pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=mongo --timeout=120s
+          echo "MongoDB pod is ready."
+
+      - name: MongoDB readiness check
+        run: |
+          echo "Checking if MongoDB is ready..."
+          until kubectl exec $(kubectl get pod -l app=mongo -o jsonpath="{.items[0].metadata.name}") -- mongosh --eval "db.runCommand({ ping: 1 })"; do
+            echo "Waiting for MongoDB to be ready..."
+            sleep 5
+          done
+          echo "MongoDB is ready."   
+
+      - name: Debugging - List all pods
+        run: |
+          kubectl get pods --all-namespaces          
