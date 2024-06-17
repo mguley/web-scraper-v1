@@ -61,7 +61,7 @@ jobs:
       - name: RabbitMQ readiness check
         run: |
           echo "Checking if RabbitMQ is ready..."
-          until kubectl run curl-container --rm -i --tty --image=appropriate/curl -- bash -c "curl -u user:pass http://rabbitmq-service:15672/api/overview"; do
+          until kubectl run curl-container --rm --image=appropriate/curl --command -- sh -c "response=$(curl -u user:pass http://rabbitmq-service:15672/api/overview); echo \$response; test -n \"\$response\""; do
             echo "Waiting for RabbitMQ to be ready..."
             sleep 5
           done
