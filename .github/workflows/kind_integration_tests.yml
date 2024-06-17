@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Tor Proxy Docker Image
         run: |
-          docker build -t tor-proxy:latest -f test/integration/docker/tor/Dockerfile .
+          docker build -t tor-proxy:latest -f test/integration/docker/tor/Dockerfile test/integration/docker/tor
 
       - name: Load Tor Proxy Docker Image into Kind
         run: |
