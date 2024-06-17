@@ -55,7 +55,7 @@ jobs:
       - name: Wait for RabbitMQ pod to be ready
         run: |
           echo "Waiting for RabbitMQ pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=120s
+          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=240s
           echo "RabbitMQ pod is ready."
 
       - name: Create RabbitMQ readiness check job
