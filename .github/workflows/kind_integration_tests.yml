@@ -146,8 +146,17 @@ jobs:
           kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=600s
           echo "Test Runner pod is ready."     
 
-      - name: Verify Test Runner Pod
-        run: kubectl get pods -l app=test-runner           
+      - name: Delay to Ensure Pod is Fully Ready
+        run: sleep 30
+
+      - name: Verify Test Runner Pod Again
+        run: kubectl get pods -l app=test-runner  
+
+      - name: Debugging - List all pods
+        if: always()
+        run: |
+          kubectl get pods --all-namespaces
+          kubectl get svc --all-namespaces         
 
       - name: Copy Code to Test Runner Pod
         run: |
