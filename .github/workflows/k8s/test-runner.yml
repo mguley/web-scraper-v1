@@ -53,7 +53,7 @@ spec:
   volumes:
     - name: test-volume
       hostPath:
-        path: /mnt/data/web-scraper-v1  # This should point to the location where the code is checked out
+        path: https://github.com/mguley/web-scraper-v1  # This should point to the location where the code is checked out
     - name: script-volume
       configMap:
         name: integration-tests-config
