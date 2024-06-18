@@ -144,10 +144,20 @@ jobs:
         run: |
           echo "Waiting for Test Runner pod to be ready..."
           kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=120s
-          echo "Test Runner pod is ready."         
+          echo "Test Runner pod is ready."   
+
+      - name: Stream Test Runner Logs
+        run: |
+          kubectl logs -f $(kubectl get pods -l app=test-runner -o jsonpath="{.items[0].metadata.name}")          
           
       - name: Debugging - List all pods
         if: always()
         run: |
           kubectl get pods --all-namespaces
-          kubectl get svc --all-namespaces         
+          kubectl get svc --all-namespaces     
+
+      - name: Wait for Test Runner Pod to Complete
+        run: |
+          echo "Waiting for Test Runner to complete..."
+          kubectl wait --for=condition=Succeeded pod -l app=test-runner --timeout=600s
+          echo "Test Runner pod has completed."           
