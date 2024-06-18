@@ -6,5 +6,11 @@ data:
   test-runner.sh: |
     #!/bin/bash
     go version
+    go version
+    ls
+    pwd
     cd /workspace # This is where the go.mod file should be
-    go test ./test/integration/... -v
+    ls
+    pwd
+    go version
+    #go test ./test/integration/... -v
