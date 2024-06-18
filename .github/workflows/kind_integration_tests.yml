@@ -135,7 +135,7 @@ jobs:
         run: kubectl apply -f .github/workflows/k8s/integration-tests-configmap.yml
 
       - name: Create Source Code Tarball
-        run: tar -czvf src-code.tar.gz .  
+        run: tar -czvf src-code.tar.gz README.md docker/ test/ config/ internal/ go.mod go.sum 
 
       - name: Create Source Code Volume
         run: kubectl create configmap src-code --from-file=src-code.tar.gz    
