@@ -1,6 +1,10 @@
 name: Kind Integration Tests
 
 on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -134,8 +138,27 @@ jobs:
       - name: Create ConfigMap for Integration Tests
         run: kubectl apply -f .github/workflows/k8s/integration-tests-configmap.yml
 
+      - name: Create Source Code Tarball
+        run: tar -czvf src-code.tar.gz README.md docker/ test/ config/ internal/ go.mod go.sum 
+
       - name: Create Source Code Volume
-        run: kubectl create configmap src-code --from-file=.
+        run: kubectl create configmap src-code --from-file=src-code.tar.gz    
 
       - name: Deploy Test Runner Deployment
         run: kubectl apply -f .github/workflows/k8s/test-runner-deployment.yml
+
+      - name: Wait for Test Runner to be Ready
+        run: |
+          echo "Waiting for Test Runner pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=120s
+          echo "Test Runner pod is ready."   
+
+      - name: Stream Test Runner Logs
+        run: |
+          kubectl logs -f $(kubectl get pods -l app=test-runner -o jsonpath="{.items[0].metadata.name}")          
+          
+      - name: Debugging - List all pods
+        if: always()
+        run: |
+          kubectl get pods --all-namespaces
+          kubectl get svc --all-namespaces             
