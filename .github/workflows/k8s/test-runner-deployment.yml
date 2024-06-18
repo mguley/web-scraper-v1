@@ -15,7 +15,7 @@ spec:
       initContainers:
         - name: init-copy
           image: busybox
-          command: ['sh', '-c', 'cp -r /src/* /workspace']
+          command: ['sh', '-c', 'tar -xzvf /src/src-code.tar.gz -C /workspace']
           volumeMounts:
             - name: src-volume
               mountPath: /src
