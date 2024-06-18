@@ -54,8 +54,7 @@ spec:
           subPath: test-runner.sh
   volumes:
     - name: test-volume
-      hostPath:
-        path: /mnt/data/web-scraper-v1  # This should point to the location where the code is checked out
+      emptyDir: {}
     - name: script-volume
       configMap:
         name: integration-tests-config
