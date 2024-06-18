@@ -137,6 +137,9 @@ jobs:
       - name: Deploy Test Runner Pod
         run: kubectl apply -f .github/workflows/k8s/test-runner.yml
 
+      - name: Verify Test Runner Pod
+        run: kubectl get pods -l app=test-runner        
+
       - name: Wait for Test Runner Pod to Complete
         run: |
           echo "Waiting for Test Runner pod to complete..."
