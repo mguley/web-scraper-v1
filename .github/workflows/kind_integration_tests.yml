@@ -143,8 +143,11 @@ jobs:
       - name: Wait for Test Runner Pod to be Ready
         run: |
           echo "Waiting for Test Runner pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=240s
-          echo "Test Runner pod is ready."        
+          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=600s
+          echo "Test Runner pod is ready."     
+
+      - name: Verify Test Runner Pod
+        run: kubectl get pods -l app=test-runner           
 
       - name: Copy Code to Test Runner Pod
         run: |
