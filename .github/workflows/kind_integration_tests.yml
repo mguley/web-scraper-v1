@@ -134,49 +134,8 @@ jobs:
       - name: Create ConfigMap for Integration Tests
         run: kubectl apply -f .github/workflows/k8s/integration-tests-configmap.yml
 
-      - name: Deploy Test Runner Pod
-        run: kubectl apply -f .github/workflows/k8s/test-runner.yml
+      - name: Create Source Code Volume
+        run: kubectl create configmap src-code --from-file=.
 
-      - name: Verify Test Runner Pod
-        run: kubectl get pods -l app=test-runner 
-
-      - name: Wait for Test Runner Pod to be Ready
-        run: |
-          echo "Waiting for Test Runner pod to be ready..."
-          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=600s
-          echo "Test Runner pod is ready."     
-
-      - name: Delay to Ensure Pod is Fully Ready
-        run: sleep 30
-
-      - name: Verify Test Runner Pod Again
-        run: kubectl get pods -l app=test-runner  
-
-      - name: Fetch Test Runner logs in case of failure
-        if: always()
-        run: |
-          echo "Fetching Test Runner logs..."
-          for pod in $(kubectl get pods -l app=test-runner -o jsonpath='{.items[*].metadata.name}'); do
-            echo "Logs for $pod:"
-            kubectl logs $pod --all-containers || true
-          done         
-
-      - name: Debugging - List all pods
-        if: always()
-        run: |
-          kubectl get pods --all-namespaces
-          kubectl get svc --all-namespaces         
-
-      - name: Copy Code to Test Runner Pod
-        run: |
-          kubectl cp . test-runner:/workspace        
-
-      - name: Wait for Test Runner Pod to Complete
-        run: |
-          echo "Waiting for Test Runner pod to complete..."
-          kubectl wait --for=condition=Succeeded pod/test-runner --timeout=600s
-          echo "Test Runner pod has completed."        
-
-      - name: Fetch Test Runner Logs
-        run: |
-          kubectl logs test-runner  
+      - name: Deploy Test Runner Deployment
+        run: kubectl apply -f .github/workflows/k8s/test-runner-deployment.yml
