@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: integration-tests-config
+data:
+  test-runner.sh: |
+    #!/bin/bash
+    go version
+    cd /workspace # This is where the go.mod file should be
+    go test ./test/integration/... -v
