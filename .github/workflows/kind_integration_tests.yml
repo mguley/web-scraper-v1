@@ -152,6 +152,15 @@ jobs:
       - name: Verify Test Runner Pod Again
         run: kubectl get pods -l app=test-runner  
 
+      - name: Fetch Test Runner logs in case of failure
+        if: always()
+        run: |
+          echo "Fetching Test Runner logs..."
+          for pod in $(kubectl get pods -l app=test-runner -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done         
+
       - name: Debugging - List all pods
         if: always()
         run: |
