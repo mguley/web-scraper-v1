@@ -131,11 +131,18 @@ jobs:
             kubectl logs $pod --all-containers || true
           done          
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.22.2'
+      - name: Create ConfigMap for Integration Tests
+        run: kubectl apply -f .github/workflows/k8s/integration-tests-configmap.yml
 
-      - name: Run integration tests
+      - name: Deploy Test Runner Pod
+        run: kubectl apply -f .github/workflows/k8s/test-runner.yml
+
+      - name: Wait for Test Runner Pod to Complete
         run: |
-          go test ./test/integration/... -v          
+          echo "Waiting for Test Runner pod to complete..."
+          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=600s
+          echo "Test Runner pod is ready."        
+
+      - name: Fetch Test Runner Logs
+        run: |
+          kubectl logs test-runner  
