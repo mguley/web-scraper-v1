@@ -135,7 +135,10 @@ jobs:
         run: kubectl apply -f .github/workflows/k8s/integration-tests-configmap.yml
 
       - name: Create Source Code Volume
-        run: kubectl create configmap src-code --from-file=.
+        run: kubectl create configmap src-code --from-file=.         
+
+      - name: Deploy Test Runner Deployment
+        run: kubectl apply -f .github/workflows/k8s/test-runner-deployment.yml
 
       - name: Wait for Test Runner to be Ready
         run: |
@@ -147,7 +150,4 @@ jobs:
         if: always()
         run: |
           kubectl get pods --all-namespaces
-          kubectl get svc --all-namespaces          
-
-      - name: Deploy Test Runner Deployment
-        run: kubectl apply -f .github/workflows/k8s/test-runner-deployment.yml
+          kubectl get svc --all-namespaces         
