@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: test-runner
+  labels:
+    app: test-runner  
 spec:
   containers:
     - name: test-runner
@@ -53,7 +55,7 @@ spec:
   volumes:
     - name: test-volume
       hostPath:
-        path: https://github.com/mguley/web-scraper-v1  # This should point to the location where the code is checked out
+        path: /mnt/data/web-scraper-v1  # This should point to the location where the code is checked out
     - name: script-volume
       configMap:
         name: integration-tests-config
