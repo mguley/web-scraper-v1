@@ -137,5 +137,17 @@ jobs:
       - name: Create Source Code Volume
         run: kubectl create configmap src-code --from-file=.
 
+      - name: Wait for Test Runner to be Ready
+        run: |
+          echo "Waiting for Test Runner pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=test-runner --timeout=120s
+          echo "Test Runner pod is ready."         
+          
+      - name: Debugging - List all pods
+        if: always()
+        run: |
+          kubectl get pods --all-namespaces
+          kubectl get svc --all-namespaces          
+
       - name: Deploy Test Runner Deployment
         run: kubectl apply -f .github/workflows/k8s/test-runner-deployment.yml
