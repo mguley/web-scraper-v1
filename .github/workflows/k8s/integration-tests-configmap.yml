@@ -7,5 +7,4 @@ data:
     #!/bin/bash
     go version
     cd /workspace # This is where the go.mod file should be
-    ls
-    #go test ./test/integration/... -v
+    go test ./test/integration/... -v

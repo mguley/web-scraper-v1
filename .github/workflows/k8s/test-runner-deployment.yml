@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-runner-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-runner
+  template:
+    metadata:
+      labels:
+        app: test-runner
+    spec:
+      initContainers:
+        - name: init-copy
+          image: busybox
+          command: ['sh', '-c', 'cp -r /src/* /workspace']
+          volumeMounts:
+            - name: src-volume
+              mountPath: /src
+            - name: test-volume
+              mountPath: /workspace
+      containers:
+        - name: test-runner
+          image: golang:1.22
+          command: ["/bin/bash", "/workspace/test-runner.sh"]
+          env:
+            - name: MONGODB_HOST
+              value: mongo-service
+            - name: MONGODB_PORT
+              value: "27017"
+            - name: MONGODB_USER
+              value: "user"
+            - name: MONGODB_PASS
+              value: "pass"
+            - name: MONGODB_DATABASE
+              value: "test_scraper_db"
+            - name: MONGODB_COLLECTION
+              value: "test_jobs"
+            - name: RABBIT_HOST
+              value: rabbitmq-service
+            - name: RABBIT_PORT
+              value: "5672"
+            - name: RABBIT_USER
+              value: "user"
+            - name: RABBIT_PASS
+              value: "pass"
+            - name: RABBIT_EXCHANGE_NAME
+              value: "test_scraper_exchange"
+            - name: RABBIT_QUEUE_NAME
+              value: "test_scraper_queue"
+            - name: TOR_PROXY_HOST
+              value: tor-service
+            - name: TOR_PROXY_PORT
+              value: "9050"
+            - name: TOR_PROXY_CONTROL_PORT
+              value: "9051"
+            - name: TOR_PROXY_CONTROL_PASSWORD
+              value: "password"
+            - name: TOR_PROXY_PING_URL
+              value: "https://check.torproject.org/"
+            - name: TOR_PROXY_VERIFY_URL
+              value: "https://checkip.amazonaws.com/"
+          volumeMounts:
+            - name: test-volume
+              mountPath: /workspace
+            - name: script-volume
+              mountPath: /workspace/test-runner.sh
+              subPath: test-runner.sh
+      volumes:
+        - name: src-volume
+          configMap:
+            name: src-code
+        - name: test-volume
+          emptyDir: {}
+        - name: script-volume
+          configMap:
+            name: integration-tests-config
+            items:
+              - key: test-runner.sh
+                path: test-runner.sh
