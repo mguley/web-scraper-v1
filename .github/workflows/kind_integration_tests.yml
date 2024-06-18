@@ -157,10 +157,4 @@ jobs:
         if: always()
         run: |
           kubectl get pods --all-namespaces
-          kubectl get svc --all-namespaces     
-
-      - name: Wait for Test Runner Pod to Complete
-        run: |
-          echo "Waiting for Test Runner to complete..."
-          kubectl wait --for=condition=Succeeded pod -l app=test-runner --timeout=600s
-          echo "Test Runner pod has completed."           
+          kubectl get svc --all-namespaces             
