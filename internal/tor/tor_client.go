@@ -34,9 +34,9 @@ func validateProxyDetails(host string, port string) error {
 	}
 
 	// Validate IP address
-	if net.ParseIP(host) == nil {
-		return errors.New(fmt.Sprintf("invalid proxy host: %s", host))
-	}
+	//if net.ParseIP(host) == nil {
+	//	return errors.New(fmt.Sprintf("invalid proxy host: %s", host))
+	//}
 
 	// Validate port number
 	if _, err := strconv.Atoi(port); err != nil {
