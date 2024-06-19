@@ -2,9 +2,9 @@ name: Kind Integration Tests (k8s)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "k8s" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "k8s" ]
   workflow_dispatch: # Allows manual triggering
 
 jobs:
