@@ -161,4 +161,13 @@ jobs:
         if: always()
         run: |
           kubectl get pods --all-namespaces
-          kubectl get svc --all-namespaces             
+          kubectl get svc --all-namespaces     
+
+      - name: Fetch Tor Proxy logs in case of failure
+        if: always()
+        run: |
+          echo "Fetching Tor Proxy logs..."
+          for pod in $(kubectl get pods -l app=tor -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done            
