@@ -35,7 +35,7 @@ func validateProxyDetails(host string, port string) error {
 
 	// Validate IP address
 	if net.ParseIP(host) == nil {
-		return errors.New("invalid IP address")
+		return errors.New(fmt.Sprintf("invalid proxy host: %s", host))
 	}
 
 	// Validate port number
