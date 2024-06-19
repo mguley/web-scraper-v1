@@ -163,7 +163,7 @@ jobs:
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces     
 
-      - name: Fetch Tor Proxy logs in case of failure
+      - name: Fetch Tor Proxy logs
         if: always()
         run: |
           echo "Fetching Tor Proxy logs..."
