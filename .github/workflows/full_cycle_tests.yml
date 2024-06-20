@@ -21,6 +21,14 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
           kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
 
+      - name: Wait for NGINX Ingress Controller to Be Ready
+        run: |
+          echo "Waiting for NGINX Ingress Controller to be ready..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/name=ingress-nginx \
+            --timeout=300s          
+
       - name: Wait for NodePort
         run: |
           echo "Waiting for NodePort..."
@@ -38,6 +46,14 @@ jobs:
 
       - name: Create Receiver Deployment and Service
         run: kubectl apply -f .github/workflows/k8s/full/receiver-deployment.yml
+
+      - name: Wait for Receiver Deployment to Be Ready
+        run: |
+          echo "Waiting for Receiver Deployment to be ready..."
+          kubectl wait --namespace default \
+            --for=condition=ready pod \
+            --selector=app=receiver \
+            --timeout=300s        
 
       - name: Create Ingress Resource
         env:
