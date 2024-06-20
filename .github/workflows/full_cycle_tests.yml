@@ -79,7 +79,7 @@ jobs:
           PUBLIC_IP: ${{ env.PUBLIC_IP }}
           NODE_PORT: ${{ env.NODE_PORT }}
         run: |
-          cat <<EOF | kubectl apply -f -
+          cat <<EOF > ingress-resource.yml
           apiVersion: networking.k8s.io/v1
           kind: Ingress
           metadata:
@@ -88,7 +88,7 @@ jobs:
               nginx.ingress.kubernetes.io/rewrite-target: /
           spec:
             rules:
-            - host: receiver.\${PUBLIC_IP}.nip.io
+            - host: receiver.${PUBLIC_IP}.nip.io
               http:
                 paths:
                 - path: /
@@ -99,6 +99,7 @@ jobs:
                       port:
                         number: 80
           EOF
+          kubectl apply -f ingress-resource.yml
 
       - name: Add Delay for DNS Propagation
         run: |
@@ -106,6 +107,9 @@ jobs:
           sleep 60
 
       - name: Display Test URL
+        env:
+          PUBLIC_IP: ${{ env.PUBLIC_IP }}
+          NODE_PORT: ${{ env.NODE_PORT }}
         run: |
           echo "To test workflow please open this URL in the browser: http://receiver.${PUBLIC_IP}.nip.io:${NODE_PORT}"
 
