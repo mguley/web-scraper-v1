@@ -39,9 +39,14 @@ jobs:
       - name: Create Receiver Deployment and Service
         run: kubectl apply -f .github/workflows/k8s/full/receiver-deployment.yml
 
+      - name: Create Ingress Resource
+        env:
+          PUBLIC_IP: ${{ env.PUBLIC_IP }}
+        run: kubectl apply -f .github/workflows/k8s/full/receiver-ingress.yml
+
       - name: Debugging - List all pods and services
         if: always()
         run: |
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces
-          kubectl get ingress --all-namespaces
+          kubectl get ingress --all-namespaces         
