@@ -1,0 +1,37 @@
+name: Full Cycle Tests (k8s)
+
+on:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  full_cycle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: v0.23.0
+
+      - name: Deploy NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+      - name: Wait for External IP
+        run: |
+          echo "Waiting for external IP..."
+          while [ -z "$EXTERNAL_IP" ]; do
+            EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+            [ -z "$EXTERNAL_IP" ] && sleep 10
+          done
+          echo "External IP: $EXTERNAL_IP"
+          echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV     
+
+      - name: Debugging - List all pods
+        if: always()
+        run: |
+          kubectl get pods --all-namespaces
+          kubectl get svc --all-namespaces
