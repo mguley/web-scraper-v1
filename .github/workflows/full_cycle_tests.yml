@@ -37,7 +37,7 @@ jobs:
           echo "NODE_PORT=$NODE_PORT" >> $GITHUB_ENV 
 
       - name: Create Receiver Deployment and Service
-        run: kubectl apply -f receiver-deployment.yml
+        run: kubectl apply -f .github/workflows/k8s/full/receiver-deployment.yml
 
       - name: Debugging - List all pods and services
         if: always()
