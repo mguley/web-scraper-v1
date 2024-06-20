@@ -36,8 +36,82 @@ jobs:
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
           echo "NODE_PORT=$NODE_PORT" >> $GITHUB_ENV 
 
-      - name: Debugging - List all pods
+      - name: Create Receiver Deployment and Service
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: receiver-deployment
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: receiver
+            template:
+              metadata:
+                labels:
+                  app: receiver
+              spec:
+                containers:
+                - name: receiver
+                  image: hashicorp/http-echo
+                  args:
+                  - "-text=Hello, World!"
+                  ports:
+                  - containerPort: 5678
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: receiver-service
+          spec:
+            selector:
+              app: receiver
+            ports:
+              - protocol: TCP
+                port: 80
+                targetPort: 5678
+          EOF     
+
+      - name: Create Ingress Resource
+        env:
+          PUBLIC_IP: ${{ env.PUBLIC_IP }}
+          NODE_PORT: ${{ env.NODE_PORT }}
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: receiver-ingress
+            annotations:
+              nginx.ingress.kubernetes.io/rewrite-target: /
+          spec:
+            rules:
+            - host: receiver.\${PUBLIC_IP}.nip.io
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: receiver-service
+                      port:
+                        number: 80
+          EOF    
+
+      - name: Display Test URL
+        run: |
+          echo "To test workflow please open this URL in the browser: http://receiver.${PUBLIC_IP}.nip.io:${NODE_PORT}"          
+
+      - name: Add Delay for DNS Propagation
+        run: |
+          echo "Waiting for DNS propagation..."
+          sleep 60          
+
+      - name: Debugging - List all pods and services
         if: always()
         run: |
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces
+          kubectl get ingress --all-namespaces
