@@ -16,7 +16,7 @@ jobs:
         with:
           version: v0.23.0
 
-      - name: Deploy NGINX Ingress Controller without Admission Webhook
+      - name: Deploy NGINX Ingress Controller
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
           kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
@@ -37,42 +37,7 @@ jobs:
           echo "NODE_PORT=$NODE_PORT" >> $GITHUB_ENV 
 
       - name: Create Receiver Deployment and Service
-        run: |
-          kubectl apply -f - <<EOF
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: receiver-deployment
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: receiver
-            template:
-              metadata:
-                labels:
-                  app: receiver
-              spec:
-                containers:
-                - name: receiver
-                  image: hashicorp/http-echo
-                  args:
-                  - "-text=Hello, World!"
-                  ports:
-                  - containerPort: 5678
-          ---
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: receiver-service
-          spec:
-            selector:
-              app: receiver
-            ports:
-              - protocol: TCP
-                port: 80
-                targetPort: 5678
-          EOF          
+        run: kubectl apply -f receiver-deployment.yml
 
       - name: Debugging - List all pods and services
         if: always()
