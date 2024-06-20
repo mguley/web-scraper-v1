@@ -61,14 +61,6 @@ jobs:
         run: |
           envsubst < .github/workflows/k8s/full/receiver-ingress.yml | kubectl apply -f -
 
-      - name: Wait for Ingress to be Ready
-        run: |
-          echo "Waiting for Ingress to be ready..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/name=ingress-nginx \
-            --timeout=300s
-
       - name: Add Delay for DNS Propagation
         run: |
           echo "Waiting for DNS propagation..."
