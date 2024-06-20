@@ -11,13 +11,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Pull Kind Node Image
+      - name: Configure Docker Daemon
         run: |
-          docker pull kindest/node:v1.30.0
+          echo '{
+            "registry-mirrors": ["https://mirror.gcr.io"]
+          }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: Set up Kind
-        run: |
-          kind create cluster --name kind --image kindest/node:v1.30.0 --wait 300s
+        uses: helm/kind-action@v1.0.0
+        with:
+          version: v0.23.0
+          cluster_name: kind
+          wait: 300s
 
       - name: Deploy NGINX Ingress Controller
         run: |
