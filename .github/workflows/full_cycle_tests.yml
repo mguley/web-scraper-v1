@@ -19,16 +19,20 @@ jobs:
       - name: Deploy NGINX Ingress Controller
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+          kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
 
-      - name: Wait for External IP
+      - name: Wait for NodePort
         run: |
-          echo "Waiting for external IP..."
-          while [ -z "$EXTERNAL_IP" ]; do
-            EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
-            [ -z "$EXTERNAL_IP" ] && sleep 10
+          echo "Waiting for NodePort..."
+          while [ -z "$NODE_PORT" ]; do
+            NODE_PORT=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath="{.spec.ports[0].nodePort}")
+            [ -z "$NODE_PORT" ] && sleep 10
           done
-          echo "External IP: $EXTERNAL_IP"
-          echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV     
+          NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+          echo "Node IP: $NODE_IP"
+          echo "Node Port: $NODE_PORT"
+          echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
+          echo "NODE_PORT=$NODE_PORT" >> $GITHUB_ENV   
 
       - name: Debugging - List all pods
         if: always()
