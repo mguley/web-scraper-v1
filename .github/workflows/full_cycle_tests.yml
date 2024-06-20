@@ -73,7 +73,7 @@ jobs:
       - name: Add Delay for DNS Propagation
         run: |
           echo "Waiting for DNS propagation..."
-          sleep 60
+          sleep 120
 
       - name: Verify Test URL
         run: |
@@ -85,4 +85,10 @@ jobs:
         run: |
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces
-          kubectl get ingress --all-namespaces         
+          kubectl get ingress --all-namespaces    
+
+      - name: Check Ingress Controller Logs
+        if: failure()
+        run: |
+          kubectl logs -n ingress-nginx $(kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[0].metadata.name}') > ingress-controller-logs.txt
+          cat ingress-controller-logs.txt          
