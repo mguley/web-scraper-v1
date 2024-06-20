@@ -16,9 +16,10 @@ jobs:
         with:
           version: v0.23.0
 
-      - name: Deploy NGINX Ingress Controller
+      - name: Deploy NGINX Ingress Controller without Admission Webhook
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+          kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type='json' -p='[{"op": "remove", "path": "/spec/template/metadata/annotations/sidecar.istio.io~1inject"}]'
           kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
 
       - name: Wait for NodePort
