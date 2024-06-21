@@ -23,20 +23,7 @@ jobs:
         with:
           version: v0.23.0
           cluster_name: kind
-          wait: 300s
-
-      - name: Deploy NGINX Ingress Controller
-        run: |
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
-          kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
-
-      #- name: Wait for NGINX Ingress Controller to Be Ready
-      #  run: |
-      #    echo "Waiting for NGINX Ingress Controller to be ready..."
-      #    kubectl wait --namespace ingress-nginx \
-      #      --for=condition=ready pod \
-      #      --selector=app.kubernetes.io/name=ingress-nginx \
-      #      --timeout=300s          
+          wait: 300s    
 
       - name: Wait for NodePort
         run: |
@@ -101,4 +88,9 @@ jobs:
         run: |
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces
-          kubectl get ingress --all-namespaces            
+          kubectl get ingress --all-namespaces    
+
+      - name: Fetch Receiver Logs
+        if: always()
+        run: |
+          kubectl logs $(kubectl get pods --selector=app=receiver -o jsonpath="{.items[0].metadata.name}")          
