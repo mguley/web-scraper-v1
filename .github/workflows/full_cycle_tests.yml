@@ -62,33 +62,30 @@ jobs:
           kubectl wait --namespace default \
             --for=condition=ready pod \
             --selector=app=receiver \
-            --timeout=300s        
+            --timeout=300s     
 
-      - name: Create Ingress Resource
-        env:
-          PUBLIC_IP: ${{ env.PUBLIC_IP }}
+      - name: Install ngrok
         run: |
-          envsubst < .github/workflows/k8s/full/receiver-ingress.yml | kubectl apply -f -
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null \
+          && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list \
+          && sudo apt update && sudo apt install ngrok          
 
-      - name: Add Delay for DNS Propagation
+      - name: Expose Receiver Service with ngrok
         run: |
-          echo "Waiting for DNS propagation..."
-          sleep 120
+          ngrok http 80 --log=stdout &   
+
+      - name: Add Delay for ngrok to Start
+        run: sleep 10     
 
       - name: Verify Test URL
         run: |
-          echo "Verifying Test URL..."
-          curl -v http://receiver.${{ env.PUBLIC_IP }}.nip.io          
+          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
+          echo "Test URL: $NGROK_URL"
+          curl -v $NGROK_URL        
 
       - name: Debugging - List all pods and services
         if: always()
         run: |
           kubectl get pods --all-namespaces
           kubectl get svc --all-namespaces
-          kubectl get ingress --all-namespaces    
-
-      - name: Check Ingress Controller Logs
-        if: failure()
-        run: |
-          kubectl logs -n ingress-nginx $(kubectl get pods -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[0].metadata.name}') > ingress-controller-logs.txt
-          cat ingress-controller-logs.txt          
+          kubectl get ingress --all-namespaces            
