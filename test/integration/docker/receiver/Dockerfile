@@ -3,9 +3,9 @@ FROM golang:1.22 as builder
 
 WORKDIR /app
 # Copy the source code into the container
-COPY receiver .
+COPY cmd/receiver .
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./receiver
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest
 WORKDIR /root/
