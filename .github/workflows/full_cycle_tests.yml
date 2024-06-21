@@ -75,7 +75,9 @@ jobs:
 
       - name: Expose Receiver Service with ngrok
         run: |
-          ngrok http 80 --log=stdout &   
+          kubectl port-forward svc/receiver-service 8080:80 &
+          sleep 5
+          ngrok http 8080 --log=stdout &
 
       - name: Add Delay for ngrok to Start
         run: sleep 10     
