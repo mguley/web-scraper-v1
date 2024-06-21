@@ -55,7 +55,7 @@ jobs:
 
       - name: Build Receiver Docker Image
         run: |
-          docker build -t receiver:unique-tag -f test/integration/docker/receiver/Dockerfile cmd
+          docker build -t receiver:unique-tag -f test/integration/docker/receiver/Dockerfile .
 
       - name: Load Receiver Docker Image into Kind
         run: |
