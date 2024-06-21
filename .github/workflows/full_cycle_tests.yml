@@ -30,13 +30,13 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
           kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "NodePort"}}'
 
-      - name: Wait for NGINX Ingress Controller to Be Ready
-        run: |
-          echo "Waiting for NGINX Ingress Controller to be ready..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/name=ingress-nginx \
-            --timeout=300s          
+      #- name: Wait for NGINX Ingress Controller to Be Ready
+      #  run: |
+      #    echo "Waiting for NGINX Ingress Controller to be ready..."
+      #    kubectl wait --namespace ingress-nginx \
+      #      --for=condition=ready pod \
+      #      --selector=app.kubernetes.io/name=ingress-nginx \
+      #      --timeout=300s          
 
       - name: Wait for NodePort
         run: |
