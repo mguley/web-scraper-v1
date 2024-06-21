@@ -14,11 +14,9 @@ spec:
     spec:
       containers:
         - name: receiver
-          image: hashicorp/http-echo
-          args:
-            - "-text=Hello, World!"
+          image: receiver:unique-tag  # Use the custom Docker image tag
           ports:
-            - containerPort: 5678
+            - containerPort: 8888
 ---
 apiVersion: v1
 kind: Service
@@ -30,5 +28,5 @@ spec:
   ports:
     - port: 80
       protocol: TCP
-      targetPort: 5678
+      targetPort: 8888
       

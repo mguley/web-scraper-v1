@@ -53,6 +53,14 @@ jobs:
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
           echo "NODE_PORT=$NODE_PORT" >> $GITHUB_ENV 
 
+      - name: Build Receiver Docker Image
+        run: |
+          docker build -t receiver:unique-tag -f test/integration/docker/receiver/Dockerfile cmd
+
+      - name: Load Receiver Docker Image into Kind
+        run: |
+          kind load docker-image receiver:unique-tag          
+
       - name: Create Receiver Deployment and Service
         run: kubectl apply -f .github/workflows/k8s/full/receiver-deployment.yml
 
