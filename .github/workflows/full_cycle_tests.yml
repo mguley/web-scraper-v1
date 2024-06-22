@@ -91,7 +91,12 @@ jobs:
           kubectl wait --namespace default \
             --for=condition=ready pod \
             --selector=app=transmitter \
-            --timeout=300s       
+            --timeout=300s     
+
+      - name: Fetch Transmitter Logs
+        run: |
+          kubectl logs $(kubectl get pods --selector=app=transmitter -o jsonpath="{.items[0].metadata.name}") > transmitter_logs.txt
+          cat transmitter_logs.txt            
 
       - name: Debugging - List all pods and services
         if: always()
