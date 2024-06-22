@@ -150,4 +150,22 @@ jobs:
       - name: Fetch Receiver Logs
         if: always()
         run: |
-          kubectl logs $(kubectl get pods --selector=app=receiver -o jsonpath="{.items[0].metadata.name}")          
+          kubectl logs $(kubectl get pods --selector=app=receiver -o jsonpath="{.items[0].metadata.name}")
+
+      - name: Fetch RabbitMQ logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching RabbitMQ logs..."
+          for pod in $(kubectl get pods -l app=rabbitmq -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done   
+
+      - name: Fetch Tor Proxy logs in case of failure
+        if: failure()
+        run: |
+          echo "Fetching Tor Proxy logs..."
+          for pod in $(kubectl get pods -l app=tor -o jsonpath='{.items[*].metadata.name}'); do
+            echo "Logs for $pod:"
+            kubectl logs $pod --all-containers || true
+          done           
