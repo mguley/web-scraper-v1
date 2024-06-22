@@ -17,7 +17,7 @@ spec:
           image: transmitter:unique-tag # Use the custom Docker image tag
           env:
             - name: RECEIVER_URL
-              value: "http://receiver-service.default.svc.cluster.local:8888"
+              value: "${RECEIVER_URL}"
             - name: RABBIT_HOST
               value: rabbitmq-service
             - name: RABBIT_PORT
