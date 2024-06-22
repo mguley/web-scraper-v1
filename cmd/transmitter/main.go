@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/mguley/web-scraper-v1/config"
 	"github.com/mguley/web-scraper-v1/internal/crawler"
 	"github.com/mguley/web-scraper-v1/internal/model"
@@ -10,6 +11,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/processor"
 	"github.com/mguley/web-scraper-v1/internal/tor"
 	"log"
+	"net"
 	"os"
 )
 
@@ -62,7 +64,19 @@ func main() {
 	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 2, BatchLimit: 5}
 
 	// Log the configuration before creating the facade
-	log.Printf("Config: %+v\n", cfg)
+	//log.Printf("Config: %+v\n", cfg)
+
+	// Log Tor Host and Ports
+	log.Printf("Tor Host: %s\n", cfg.TorProxy.Host)
+	log.Printf("Tor Port: %s\n", cfg.TorProxy.Port)
+	log.Printf("Tor ControlPort: %s\n", cfg.TorProxy.ControlPort)
+
+	// Attempt to resolve Tor service
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", cfg.TorProxy.Host, cfg.TorProxy.Port))
+	if err != nil {
+		log.Fatalf("Failed to resolve Tor service address: %v", err)
+	}
+	log.Printf("Resolved Tor service address: %v\n", addr)
 
 	// Initialize Tor network connection facade
 	facade, err := tor.NewTorFacade(&cfg.TorProxy, poolSize)
