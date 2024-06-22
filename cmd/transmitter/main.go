@@ -79,7 +79,7 @@ func main() {
 		log.Fatalf("Failed to create receiver processor: %v", createErr)
 	}
 
-	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 2, BatchLimit: 5}
+	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 1, BatchLimit: 5}
 	dispatcher := crawler.NewDispatcher[model.ReceiverResponse](ctx, dispatcherConfig, receiverProcessor, facade)
 	dispatcher.Run()
 	log.Println("\nDispatcher started.")
