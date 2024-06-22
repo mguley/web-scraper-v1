@@ -50,6 +50,14 @@ jobs:
             --selector=app=receiver \
             --timeout=300s     
 
+      - name: Build Tor Proxy Docker Image
+        run: |
+          docker build -t tor-proxy:unique-tag -f test/integration/docker/tor/Dockerfile test/integration/docker/tor
+
+      - name: Load Tor Proxy Docker Image into Kind
+        run: |
+          kind load docker-image tor-proxy:unique-tag             
+
       - name: Install ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null \
