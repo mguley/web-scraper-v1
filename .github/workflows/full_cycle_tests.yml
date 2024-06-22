@@ -131,6 +131,10 @@ jobs:
         run: |
           kind load docker-image transmitter:unique-tag
 
+      - name: Prepare Transmitter Deployment with ngrok URL
+        run: |
+          envsubst < .github/workflows/k8s/full/transmitter-deployment-template.yml > .github/workflows/k8s/full/transmitter-deployment.yml          
+
       - name: Create Transmitter Deployment
         run: kubectl apply -f .github/workflows/k8s/full/transmitter-deployment.yml
 
