@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmitter-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transmitter
+  template:
+    metadata:
+      labels:
+        app: transmitter
+    spec:
+      containers:
+        - name: transmitter
+          image: transmitter:unique-tag # Use the custom Docker image tag
+          env:
+            - name: RECEIVER_URL
+              value: "http://receiver-service.default.svc.cluster.local:8888"
+            - name: RABBIT_HOST
+              value: "rabbitmq-service"
+            - name: RABBIT_PORT
+              value: "5672"
+            - name: RABBIT_USER
+              value: "user"
+            - name: RABBIT_PASS
+              value: "pass"
+            - name: RABBIT_EXCHANGE_NAME
+              value: "scraper_exchange"
+            - name: RABBIT_QUEUE_NAME
+              value: "scraper_queue"
+            - name: TOR_PROXY_HOST
+              value: "tor-service"
+            - name: TOR_PROXY_PORT
+              value: "9050"
+            - name: TOR_PROXY_CONTROL_PORT
+              value: "9051"
+            - name: TOR_PROXY_CONTROL_PASSWORD
+              value: "password"
+            - name: TOR_PROXY_PING_URL
+              value: "https://check.torproject.org/"
+            - name: TOR_PROXY_VERIFY_URL
+              value: "https://checkip.amazonaws.com/"
