@@ -61,6 +61,9 @@ func main() {
 
 	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 2, BatchLimit: 5}
 
+	// Log the configuration before creating the facade
+	log.Printf("Config: %+v\n", cfg)
+
 	// Initialize Tor network connection facade
 	facade, err := tor.NewTorFacade(&cfg.TorProxy, poolSize)
 	if err != nil {
