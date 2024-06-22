@@ -2,18 +2,27 @@
 FROM golang:1.22 as builder
 
 WORKDIR /app
-# Copy the go.mod and go.sum files
+
+# Copy the go.mod and go.sum files from the root of the project
 COPY go.mod go.sum ./
+
+# Download all the dependencies.
 RUN go mod download
+
+# Copy the entire source code into the container
 COPY . .
 
-# Copy the source code into the container
-#COPY cmd/transmitter .
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/transmitter
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o transmitter ./cmd/transmitter/main.go
 
-#FROM alpine:latest
-#WORKDIR /root/
-#COPY --from=builder /app/main .
-# Run the application
-#CMD ["./main"]
+# Use a minimal base image to run the application
+FROM alpine:latest
+
+# Set the working directory in the new image
+WORKDIR /root/
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/transmitter .
+
+# Run the binary
+CMD ["./transmitter"]
