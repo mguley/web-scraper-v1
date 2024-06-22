@@ -134,6 +134,13 @@ jobs:
       - name: Create Transmitter Deployment
         run: kubectl apply -f .github/workflows/k8s/full/transmitter-deployment.yml
 
+      - name: Verify DNS Resolution
+        run: |
+          kubectl run dnsutils --image=infoblox/dnstools --command -- sleep 3600
+          sleep 5
+          kubectl exec dnsutils -- nslookup tor-service.default.svc.cluster.local
+          kubectl delete pod dnsutils
+
       - name: Wait for Transmitter Deployment to Be Ready
         run: |
           echo "Waiting for Transmitter Deployment to be ready..."
