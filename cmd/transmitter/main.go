@@ -59,13 +59,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 2, BatchLimit: 5}
-
-	// Log Tor Host and Ports
-	log.Printf("Tor Host: %s\n", cfg.TorProxy.Host)
-	log.Printf("Tor Port: %s\n", cfg.TorProxy.Port)
-	log.Printf("Tor ControlPort: %s\n", cfg.TorProxy.ControlPort)
-
 	// Initialize Tor network connection facade
 	facade, err := tor.NewTorFacade(&cfg.TorProxy, poolSize)
 	if err != nil {
@@ -80,21 +73,34 @@ func main() {
 	log.Println("\nNetwork connection established.")
 
 	receiverParser := parser.NewReceiverResponseParser()
-	receiverProcessor, createErr := processor.NewJobProcessor[model.ReceiverResponse](httpClient, cfg.RabbitMQ, receiverParser)
+	receiverProcessor, createErr := processor.NewJobProcessor[model.ReceiverResponse](httpClient,
+		cfg.RabbitMQ, receiverParser)
 	if createErr != nil {
 		log.Fatalf("Failed to create receiver processor: %v", createErr)
 	}
 
+	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 2, BatchLimit: 5}
 	dispatcher := crawler.NewDispatcher[model.ReceiverResponse](ctx, dispatcherConfig, receiverProcessor, facade)
 	dispatcher.Run()
-
 	log.Println("\nDispatcher started.")
 	defer dispatcher.Stop()
 
-	// Enqueue an initial URL for processing
-	log.Println("\nEnqueuing job...")
-	dispatcher.WorkerManager.UnitQueue <- crawler.Unit{URL: receiverURL}
+	// Enqueue URLs for processing
+	log.Println("Enqueuing jobs...")
+	if enqueueErr := enqueueJobs(dispatcher, receiverURL, 3); enqueueErr != nil {
+		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
+	}
 
 	// Block to keep the application running
 	select {}
+}
+
+func enqueueJobs(dispatcher *crawler.Dispatcher[model.ReceiverResponse], receiverURL string, unitCount int) error {
+	for i := 0; i < unitCount; i++ {
+		if err := dispatcher.WorkerManager.AssignUnit(crawler.Unit{URL: receiverURL}); err != nil {
+			return err
+		}
+		log.Printf("Enqueued job %d with URL: %s", i+1, receiverURL)
+	}
+	return nil
 }
