@@ -33,10 +33,11 @@ func validateProxyDetails(host string, port string) error {
 		return errors.New("proxy host or port is empty")
 	}
 
+	// Skip IP address validation since Kubernetes service names are used
 	// Validate IP address
-	if net.ParseIP(host) == nil {
-		return errors.New("invalid IP address")
-	}
+	//if net.ParseIP(host) == nil {
+	//	return errors.New("invalid IP address")
+	//}
 
 	// Validate port number
 	if _, err := strconv.Atoi(port); err != nil {
