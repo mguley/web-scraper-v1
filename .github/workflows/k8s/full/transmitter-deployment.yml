@@ -19,7 +19,7 @@ spec:
             - name: RECEIVER_URL
               value: "http://receiver-service.default.svc.cluster.local:8888"
             - name: RABBIT_HOST
-              value: "rabbitmq-service"
+              value: rabbitmq-service
             - name: RABBIT_PORT
               value: "5672"
             - name: RABBIT_USER
@@ -31,7 +31,7 @@ spec:
             - name: RABBIT_QUEUE_NAME
               value: "scraper_queue"
             - name: TOR_PROXY_HOST
-              value: "tor-service"
+              value: tor-service
             - name: TOR_PROXY_PORT
               value: "9050"
             - name: TOR_PROXY_CONTROL_PORT
