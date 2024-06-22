@@ -14,31 +14,41 @@ import (
 )
 
 var (
-	envPath     string         // Path to the environment variable file
 	cfg         *config.Config // Pointer to configuration loaded from the environment
 	receiverURL string         // URL of the receiver service to be scraped
 	poolSize    int            // Number of simultaneous connections in the pool
 )
 
 func init() {
-	flag.StringVar(&envPath, "env", ".env", "path to env file")
 	flag.StringVar(&receiverURL, "receiver-url", "", "URL of the receiver service")
 	flag.Parse()
 
-	if initConfigErr := config.InitConfig(envPath); initConfigErr != nil {
-		log.Fatalf("Failed to initialize configuration: %v", initConfigErr)
-		return
-	}
-
-	var configErr error
-	if cfg, configErr = config.GetConfig(); configErr != nil {
-		log.Fatalf("Failed to get configuration: %v", configErr)
-	}
-
 	// Obtain receiver URL from environment variables if not set via flags
-	receiverURL = os.Getenv("RECEIVER_URL")
+	if receiverURL == "" {
+		receiverURL = os.Getenv("RECEIVER_URL")
+	}
 	if receiverURL == "" {
 		log.Fatalf("Receiver URL must be specified")
+	}
+
+	// Load configuration from environment variables (transmitter pod)
+	cfg = &config.Config{
+		RabbitMQ: config.RabbitMQ{
+			Host:         os.Getenv("RABBIT_HOST"),
+			Port:         os.Getenv("RABBIT_PORT"),
+			User:         os.Getenv("RABBIT_USER"),
+			Pass:         os.Getenv("RABBIT_PASS"),
+			ExchangeName: os.Getenv("RABBIT_EXCHANGE_NAME"),
+			QueueName:    os.Getenv("RABBIT_QUEUE_NAME"),
+		},
+		TorProxy: config.TorProxyConfig{
+			Host:            os.Getenv("TOR_PROXY_HOST"),
+			Port:            os.Getenv("TOR_PROXY_PORT"),
+			ControlPort:     os.Getenv("TOR_PROXY_CONTROL_PORT"),
+			ControlPassword: os.Getenv("TOR_PROXY_CONTROL_PASSWORD"),
+			PingUrl:         os.Getenv("TOR_PROXY_PING_URL"),
+			VerifyUrl:       os.Getenv("TOR_PROXY_VERIFY_URL"),
+		},
 	}
 
 	// Number of connections to maintain in the pool.
@@ -62,6 +72,7 @@ func main() {
 	if connErr != nil {
 		log.Fatalf("Failed to establish connection: %v", connErr)
 	}
+	log.Println("\nNetwork connection established.")
 
 	receiverParser := parser.NewReceiverResponseParser()
 	receiverProcessor, createErr := processor.NewJobProcessor[model.ReceiverResponse](httpClient, cfg.RabbitMQ, receiverParser)
@@ -71,8 +82,11 @@ func main() {
 
 	dispatcher := crawler.NewDispatcher[model.ReceiverResponse](ctx, dispatcherConfig, receiverProcessor, facade)
 	dispatcher.Run()
+
+	log.Println("\nDispatcher started.")
 	defer dispatcher.Stop()
 
 	// Enqueue an initial URL for processing
+	log.Println("\nEnqueuing job...")
 	dispatcher.WorkerManager.UnitQueue <- crawler.Unit{URL: receiverURL}
 }
