@@ -2,6 +2,10 @@
 FROM golang:1.22 as builder
 
 WORKDIR /app
+# Copy the go.mod and go.sum files
+COPY go.mod go.sum ./
+RUN go mod download
+
 # Copy the source code into the container
 COPY cmd/transmitter .
 # Build the application
