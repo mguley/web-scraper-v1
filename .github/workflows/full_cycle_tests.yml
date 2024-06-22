@@ -64,15 +64,34 @@ jobs:
           kubectl port-forward svc/receiver-service 8080:80 &
           sleep 5
           ngrok http 8080 --log=stdout &
-
-      - name: Add Delay for ngrok to Start
-        run: sleep 10     
+          sleep 10 # Ensure ngrok has started
+          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
+          echo "Test URL: $NGROK_URL"
+          echo "RECEIVER_URL=$NGROK_URL" >> $GITHUB_ENV  
 
       - name: Verify Test URL
         run: |
-          NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url)
-          echo "Test URL: $NGROK_URL"
-          curl -v $NGROK_URL        
+          echo "Test URL: ${{ env.RECEIVER_URL }}"
+          curl -v ${{ env.RECEIVER_URL }}      
+
+      - name: Build Transmitter Docker Image
+        run: |
+          docker build -t transmitter:unique-tag -f test/integration/docker/transmitter/Dockerfile .  
+
+      - name: Load Transmitter Docker Image into Kind
+        run: |
+          kind load docker-image transmitter:unique-tag
+
+      - name: Create Transmitter Deployment
+        run: kubectl apply -f .github/workflows/k8s/full/transmitter-deployment.yml
+
+      - name: Wait for Transmitter Deployment to Be Ready
+        run: |
+          echo "Waiting for Transmitter Deployment to be ready..."
+          kubectl wait --namespace default \
+            --for=condition=ready pod \
+            --selector=app=transmitter \
+            --timeout=300s       
 
       - name: Debugging - List all pods and services
         if: always()
