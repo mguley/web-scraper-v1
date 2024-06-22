@@ -94,6 +94,7 @@ jobs:
             --timeout=300s     
 
       - name: Fetch Transmitter Logs
+        if: always()
         run: |
           kubectl logs $(kubectl get pods --selector=app=transmitter -o jsonpath="{.items[0].metadata.name}") > transmitter_logs.txt
           cat transmitter_logs.txt            
