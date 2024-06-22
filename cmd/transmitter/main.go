@@ -87,7 +87,7 @@ func main() {
 
 	// Enqueue URLs for processing
 	log.Println("Enqueuing jobs...")
-	if enqueueErr := enqueueJobs(dispatcher, receiverURL, 3); enqueueErr != nil {
+	if enqueueErr := enqueueJobs(dispatcher, receiverURL, 5); enqueueErr != nil {
 		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
 	}
 
