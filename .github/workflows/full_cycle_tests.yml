@@ -74,6 +74,47 @@ jobs:
           echo "Test URL: ${{ env.RECEIVER_URL }}"
           curl -v ${{ env.RECEIVER_URL }}      
 
+      - name: Deploy RabbitMQ
+        run: kubectl apply -f .github/workflows/k8s/rabbitmq-deployment.yml
+
+      - name: Wait for RabbitMQ pod to be ready
+        run: |
+          echo "Waiting for RabbitMQ pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=rabbitmq --timeout=240s
+          echo "RabbitMQ pod is ready."
+
+      - name: Create RabbitMQ readiness check job
+        run: |
+          kubectl delete job rabbitmq-readiness-check --ignore-not-found
+          kubectl apply -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: rabbitmq-readiness-check
+          spec:
+            template:
+              spec:
+                containers:
+                - name: curl
+                  image: appropriate/curl
+                  command: ["sh", "-c", "curl -u user:pass http://rabbitmq-service:15672/api/overview"]
+                restartPolicy: Never
+          EOF
+
+      - name: Wait for RabbitMQ readiness check job completion
+        run: |
+          kubectl wait --for=condition=complete job/rabbitmq-readiness-check --timeout=120s
+          kubectl logs job/rabbitmq-readiness-check
+
+      - name: Deploy Tor Proxy
+        run: kubectl apply -f .github/workflows/k8s/tor-deployment.yml
+
+      - name: Wait for Tor Proxy pod to be ready
+        run: |
+          echo "Waiting for Tor Proxy pod to be ready..."
+          kubectl wait --for=condition=Ready pod -l app=tor --timeout=120s
+          echo "Tor Proxy pod is ready."            
+
       - name: Build Transmitter Docker Image
         run: |
           docker build -t transmitter:unique-tag -f test/integration/docker/transmitter/Dockerfile .  
