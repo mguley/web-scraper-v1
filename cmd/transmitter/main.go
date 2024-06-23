@@ -56,6 +56,12 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatalf("Application panicked: %v", err)
+		}
+	}()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

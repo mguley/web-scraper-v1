@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/mguley/web-scraper-v1/internal/processor"
+	"log"
 	"sync"
 	"time"
 )
@@ -92,7 +93,7 @@ func (workerManager *WorkerManager[T]) AssignUnit(unit Unit) error {
 		}
 		select {
 		case workerChannel <- unit:
-			// Log or handle successful assignment
+			log.Printf("Assigned unit to worker: %s", unit.URL)
 		case <-time.After(time.Second * 3):
 			return fmt.Errorf("timeout while assigning unit to worker: %s", unit.URL)
 		}
