@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/mguley/web-scraper-v1/internal/processor"
 	"github.com/mguley/web-scraper-v1/internal/tor"
+	"log"
 )
 
 // DispatcherConfig holds configuration settings for the Dispatcher.
@@ -84,10 +85,13 @@ func (dispatcher *Dispatcher[T]) dispatch() {
 				if !more {
 					return // Exit dispatch loop if no more units are available.
 				}
+				log.Printf("Dispatching unit: %s", unit.URL)
 				err := dispatcher.WorkerManager.AssignUnit(unit)
 				if err != nil {
+					log.Printf("Failed to assign unit: %v", err)
 					continue // Skip to the next unit if there was an error assigning the current one
 				}
+				batchCount++
 			}
 			dispatcher.WorkerManager.WaitForBatchCompletion()
 		}
