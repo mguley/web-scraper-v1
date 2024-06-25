@@ -93,9 +93,10 @@ func main() {
 
 	// Enqueue URLs for processing
 	log.Println("Enqueuing jobs...")
-	if enqueueErr := enqueueJobs(dispatcher, receiverURL, 5); enqueueErr != nil {
+	// fixme found defects and it requires refactoring
+	/*if enqueueErr := enqueueJobs(dispatcher, receiverURL, 5); enqueueErr != nil {
 		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
-	}
+	}*/
 
 	// Block to keep the application running
 	select {}

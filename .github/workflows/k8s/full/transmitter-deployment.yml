@@ -1,17 +1,14 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: transmitter-deployment
+  name: transmitter-job
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: transmitter
   template:
     metadata:
       labels:
         app: transmitter
     spec:
+      restartPolicy: Never
       containers:
         - name: transmitter
           image: transmitter:unique-tag # Use the custom Docker image tag
