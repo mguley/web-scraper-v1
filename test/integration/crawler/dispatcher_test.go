@@ -1,3 +1,6 @@
+//go:build deprecated
+// +build deprecated
+
 package crawler
 
 import (

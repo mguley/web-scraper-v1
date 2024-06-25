@@ -40,6 +40,7 @@ type Logger interface {
 type logger struct {
 	log     *log.Logger
 	logFile *os.File
+	mu      sync.Mutex
 }
 
 // instance holds the singleton instance of the logger.
@@ -75,13 +76,13 @@ func (logger *logger) init() {
 	if err != nil {
 		// Fallback to standard output if log file cannot be opened
 		log.Printf("failed to open log file, using standard output: %v", err)
-		logger.log = log.New(os.Stdout, "APP_LOG: ", log.Ldate|log.Ltime|log.Lshortfile)
+		logger.log = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 		return
 	}
 
 	logger.logFile = logFile
 	// Set the logger to write to the log file
-	logger.log = log.New(logFile, "APP_LOG: ", log.Ldate|log.Ltime|log.Lshortfile)
+	logger.log = log.New(logFile, "", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 // LogError logs an error message along with the stack trace.
@@ -111,6 +112,9 @@ func (logger *logger) LogInfo(message string, includeCallerInfo ...bool) {
 // logMessage handles the actual logging, including optional caller info and stack trace.
 // It is used by both LogError and LogInfo to avoid code duplication.
 func (logger *logger) logMessage(logType string, message string, stackTrace string, includeCallerInfo ...bool) {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+
 	includeCaller := false
 	if len(includeCallerInfo) > 0 {
 		includeCaller = includeCallerInfo[0]

@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/mguley/web-scraper-v1/config"
-	"github.com/mguley/web-scraper-v1/internal/crawler"
 	"github.com/mguley/web-scraper-v1/internal/model"
 	"github.com/mguley/web-scraper-v1/internal/parser"
 	"github.com/mguley/web-scraper-v1/internal/processor"
+	"github.com/mguley/web-scraper-v1/internal/taskqueue"
 	"github.com/mguley/web-scraper-v1/internal/tor"
 	"log"
 	"os"
@@ -85,28 +86,24 @@ func main() {
 		log.Fatalf("Failed to create receiver processor: %v", createErr)
 	}
 
-	dispatcherConfig := crawler.DispatcherConfig{MaxWorkers: 1, BatchLimit: 5}
-	dispatcher := crawler.NewDispatcher[model.ReceiverResponse](ctx, dispatcherConfig, receiverProcessor, facade)
-	dispatcher.Run()
-	log.Println("\nDispatcher started.")
-	defer dispatcher.Stop()
+	queueManager := taskqueue.NewTaskQueueManager[model.ReceiverResponse](ctx, 3, receiverProcessor)
+	defer queueManager.Stop()
+
+	log.Println("\nTask queue manager started.")
 
 	// Enqueue URLs for processing
 	log.Println("Enqueuing jobs...")
-	// fixme found defects and it requires refactoring
-	/*if enqueueErr := enqueueJobs(dispatcher, receiverURL, 5); enqueueErr != nil {
+	if enqueueErr := enqueueJobs(queueManager, receiverURL, 10); enqueueErr != nil {
 		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
-	}*/
+	}
 
 	// Block to keep the application running
 	select {}
 }
 
-func enqueueJobs(dispatcher *crawler.Dispatcher[model.ReceiverResponse], receiverURL string, unitCount int) error {
+func enqueueJobs(manager *taskqueue.QueueManager[model.ReceiverResponse], receiverURL string, unitCount int) error {
 	for i := 0; i < unitCount; i++ {
-		if err := dispatcher.WorkerManager.AssignUnit(crawler.Unit{URL: receiverURL}); err != nil {
-			return err
-		}
+		manager.AddTask(taskqueue.Task{ID: fmt.Sprintf("task-%d", i+1), URL: receiverURL})
 		log.Printf("Enqueued job %d with URL: %s", i+1, receiverURL)
 	}
 	return nil

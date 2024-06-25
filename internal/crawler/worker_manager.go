@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// Deprecated: WorkerManager is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // WorkerManager manages the lifecycle and operations of a pool of workers that process units of work.
 // It utilizes a context to handle graceful shutdowns and manages synchronization of task completion across workers.
 //
@@ -35,6 +37,8 @@ type WorkerManager[T any] struct {
 	Processor      processor.Processor[T]
 }
 
+// Deprecated: NewWorkerManager is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // NewWorkerManager creates a new WorkerManager instance with a specified configuration, a processor, and a context.
 // It sets up the necessary channels and initializes the list of workers based on the configuration.
 // The context is used to manage the lifecycle of workers, especially for graceful shutdown during cancellation.
@@ -59,6 +63,8 @@ func NewWorkerManager[T any](ctx context.Context, config DispatcherConfig,
 	}
 }
 
+// Deprecated: Start is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Start initializes and starts all worker instances under management.
 // It monitors the context for cancellation to halt the startup process if necessary.
 func (workerManager *WorkerManager[T]) Start() {
@@ -74,6 +80,8 @@ func (workerManager *WorkerManager[T]) Start() {
 	}
 }
 
+// Deprecated: AssignUnit is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // AssignUnit sends a unit of work to an available worker for processing.
 // It ensures that a worker is available before assigning the unit, and uses a timeout to avoid blocking indefinitely.
 // Errors are returned if the worker queue is closed or if a timeout occurs.
@@ -103,6 +111,8 @@ func (workerManager *WorkerManager[T]) AssignUnit(unit Unit) error {
 	return nil
 }
 
+// Deprecated: GetWorkers is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // GetWorkers returns a copy of the slice of workers managed by this WorkerManager.
 // This method ensures that any modifications made to the returned slice do not affect the original workers slice.
 //
@@ -114,6 +124,8 @@ func (workerManager *WorkerManager[T]) GetWorkers() []*Worker[T] {
 	return workersCopy
 }
 
+// Deprecated: WaitForBatchCompletion is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // WaitForBatchCompletion waits for the completion of processing for all units in the current batch.
 // This method uses the batchWaitGroup to synchronize the completion based on the batch limit defined in the configuration.
 func (workerManager *WorkerManager[T]) WaitForBatchCompletion() {
@@ -125,6 +137,8 @@ func (workerManager *WorkerManager[T]) WaitForBatchCompletion() {
 	workerManager.batchWaitGroup.Wait()
 }
 
+// Deprecated: Stop is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Stop terminates all workers managed by this manager and cleans up resources.
 func (workerManager *WorkerManager[T]) Stop() {
 	// Wait for all workers to finish their tasks

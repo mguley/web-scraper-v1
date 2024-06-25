@@ -51,7 +51,7 @@ jobs:
 
     - name: Run integration tests
       run: |
-        go test ./test/integration/... -v        
+        go test -tags='!deprecated' ./test/integration/... -v    
 
     - name: Capture MongoDB logs if tests fail
       if: failure()

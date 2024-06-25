@@ -7,6 +7,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/message/shared"
 	"github.com/mguley/web-scraper-v1/internal/utils"
 	"github.com/rabbitmq/amqp091-go"
+	"sync"
 )
 
 // RabbitMQPublisher implements the Publisher interface for RabbitMQ.
@@ -16,6 +17,7 @@ type RabbitMQPublisher[T any] struct {
 	Channel    *amqp091.Channel    // Channel for interacting with RabbitMQ.
 	QueueName  string              // Name of the queue to publish messages to.
 	logger     utils.Logger        // Logger instance for logging messages and errors.
+	mu         sync.Mutex
 }
 
 // NewRabbitMQPublisher creates a new instance of RabbitMQPublisher.
@@ -51,6 +53,9 @@ func NewRabbitMQPublisher[T any](appConfig config.RabbitMQ) (*RabbitMQPublisher[
 // Returns:
 // - error: An error object if there is a failure in publishing the message, otherwise nil.
 func (publisher *RabbitMQPublisher[T]) Publish(message T) error {
+	publisher.mu.Lock()
+	defer publisher.mu.Unlock()
+
 	body, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
 		publisher.LogError(fmt.Errorf("failed to marshal message: %w", marshalErr))
@@ -89,6 +94,9 @@ func (publisher *RabbitMQPublisher[T]) Publish(message T) error {
 // - error: An error object if there is a failure in closing the connection or channel, otherwise nil.
 func (publisher *RabbitMQPublisher[T]) Close() error {
 	var errors []error
+
+	publisher.mu.Lock()
+	defer publisher.mu.Unlock()
 
 	if closeChannelErr := publisher.Channel.Close(); closeChannelErr != nil {
 		publisher.LogError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))
