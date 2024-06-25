@@ -7,6 +7,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/message/shared"
 	"github.com/mguley/web-scraper-v1/internal/utils"
 	"github.com/rabbitmq/amqp091-go"
+	"sync"
 )
 
 // RabbitMQConsumer implements the Consumer interface for RabbitMQ.
@@ -16,6 +17,7 @@ type RabbitMQConsumer[T any] struct {
 	Channel    *amqp091.Channel    // Channel for interacting with RabbitMQ.
 	QueueName  string              // Name of the queue to consume messages from.
 	logger     utils.Logger        // Logger instance for logging messages and errors.
+	mu         sync.Mutex
 }
 
 // NewRabbitMQConsumer creates a new instance of RabbitMQConsumer.
@@ -48,6 +50,9 @@ func NewRabbitMQConsumer[T any](appConfig config.RabbitMQ) (*RabbitMQConsumer[T]
 // - <-chan T: A receive-only channel from which T objects can be read.
 // - error: An error if there is an issue setting up the consumer.
 func (consumer *RabbitMQConsumer[T]) Consume() (<-chan T, error) {
+	consumer.mu.Lock()
+	defer consumer.mu.Unlock()
+
 	messages, err := consumer.Channel.Consume(
 		consumer.QueueName, // queue
 		"",                 // consumer
@@ -95,6 +100,9 @@ func (consumer *RabbitMQConsumer[T]) handleMessages(messages <-chan amqp091.Deli
 // - error: An error object if there is a failure in closing the connection or channel, otherwise nil.
 func (consumer *RabbitMQConsumer[T]) Close() error {
 	var errors []error
+
+	consumer.mu.Lock()
+	defer consumer.mu.Unlock()
 
 	if closeChannelErr := consumer.Channel.Close(); closeChannelErr != nil {
 		consumer.LogError(fmt.Errorf("failed to close RabbitMQ channel: %w", closeChannelErr))

@@ -13,6 +13,8 @@ type Unit struct {
 	URL string
 }
 
+// Deprecated: Worker is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Worker represents a single worker that processes units from the UnitQueue.
 // Each worker registers itself with the WorkerQueue and retrieves units to process.
 //
@@ -43,6 +45,8 @@ type Worker[T any] struct {
 	ctx         context.Context
 }
 
+// Deprecated: NewWorker is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // NewWorker creates a new Worker instance with the given ID, worker queue, batch done channel, and job processor.
 //
 // Parameters:
@@ -67,6 +71,8 @@ func NewWorker[T any](ctx context.Context, id int, workerQueue chan chan Unit, p
 	}
 }
 
+// Deprecated: Start is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Start begins the worker's job processing loop. The worker continuously registers itself in the WorkerQueue
 // and waits for units to process. Upon receiving a unit, it processes the unit using the job processor.
 // The worker can exit the loop if it receives a signal on the QuitChan or the context is cancelled.
@@ -99,6 +105,8 @@ func (worker *Worker[T]) Start() {
 	}()
 }
 
+// Deprecated: Stop is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Stop signals the worker to stop processing units by sending a message on the QuitChan.
 // This will cause the worker's job processing loop to exit.
 func (worker *Worker[T]) Stop() {

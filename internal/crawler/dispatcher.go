@@ -17,6 +17,8 @@ type DispatcherConfig struct {
 	BatchLimit int
 }
 
+// Deprecated: Dispatcher is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Dispatcher orchestrates the distribution of work units to workers.
 // It manages the lifecycle and operations of workers through the WorkerManager and uses configuration settings
 // provided via DispatcherConfig.
@@ -40,6 +42,8 @@ type Dispatcher[T any] struct {
 	cancelFunc    context.CancelFunc
 }
 
+// Deprecated: NewDispatcher is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // NewDispatcher creates a new Dispatcher instance with specified configuration settings, a processor, and a Tor facade.
 // It initializes a WorkerManager to handle worker-related operations based on the provided configuration.
 //
@@ -66,12 +70,16 @@ func NewDispatcher[T any](ctx context.Context, config DispatcherConfig, processo
 	}
 }
 
+// Deprecated: Run is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Run starts the dispatcher's operation, which includes starting the worker manager and the dispatch loop.
 func (dispatcher *Dispatcher[T]) Run() {
 	dispatcher.WorkerManager.Start()
 	go dispatcher.dispatch()
 }
 
+// Deprecated: dispatch is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // dispatch manages the distribution of units to workers and controls the batch processing logic based on the configuration settings.
 func (dispatcher *Dispatcher[T]) dispatch() {
 	for {
@@ -98,12 +106,16 @@ func (dispatcher *Dispatcher[T]) dispatch() {
 	}
 }
 
+// Deprecated: Stop is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // Stop halts the dispatcher's operations, including all worker processes managed by the WorkerManager.
 func (dispatcher *Dispatcher[T]) Stop() {
 	dispatcher.cancelFunc() // Trigger the cancellation
 	dispatcher.WorkerManager.Stop()
 }
 
+// Deprecated: GetContext is deprecated and will be removed in a future release.
+// Use the new task queue and worker pool mechanism instead.
 // GetContext returns the context associated with the dispatcher.
 func (dispatcher *Dispatcher[T]) GetContext() context.Context {
 	return dispatcher.ctx
