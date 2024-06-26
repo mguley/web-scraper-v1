@@ -10,6 +10,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/processor"
 	"github.com/mguley/web-scraper-v1/internal/taskqueue"
 	"github.com/mguley/web-scraper-v1/internal/tor"
+	"github.com/mguley/web-scraper-v1/internal/useragent"
 	"log"
 	"os"
 )
@@ -79,9 +80,14 @@ func main() {
 	}
 	log.Println("\nNetwork connection established.")
 
+	availableUserAgentGenerators := []useragent.UserAgentGenerator{
+		useragent.NewChromeUserAgentGenerator(),
+	}
+	compositeUserAgentGen := useragent.NewCompositeUserAgentGenerator(availableUserAgentGenerators)
+
 	receiverParser := parser.NewReceiverResponseParser()
 	receiverProcessor, createErr := processor.NewJobProcessor[model.ReceiverResponse](httpClient,
-		cfg.RabbitMQ, receiverParser)
+		cfg.RabbitMQ, receiverParser, compositeUserAgentGen)
 	if createErr != nil {
 		log.Fatalf("Failed to create receiver processor: %v", createErr)
 	}
@@ -93,7 +99,7 @@ func main() {
 
 	// Enqueue URLs for processing
 	log.Println("Enqueuing jobs...")
-	if enqueueErr := enqueueJobs(queueManager, receiverURL, 10); enqueueErr != nil {
+	if enqueueErr := enqueueJobs(queueManager, receiverURL, 5); enqueueErr != nil {
 		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
 	}
 
