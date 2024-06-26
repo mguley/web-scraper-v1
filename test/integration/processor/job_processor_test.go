@@ -5,6 +5,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/message/publisher"
 	"github.com/mguley/web-scraper-v1/internal/model"
 	"github.com/mguley/web-scraper-v1/internal/processor"
+	"github.com/mguley/web-scraper-v1/internal/useragent"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
@@ -56,7 +57,11 @@ func setupJobProcessor(t *testing.T) (*processor.JobProcessor[model.Job], func()
 	publisherRabbitMQ := pub.(*publisher.RabbitMQPublisher[model.Job])
 	client := &http.Client{}
 
-	jobProcessor, err := processor.NewJobProcessor[model.Job](client, cfg.RabbitMQ, dummyParser)
+	userAgentGen := useragent.NewCompositeUserAgentGenerator([]useragent.UserAgentGenerator{
+		useragent.NewChromeUserAgentGenerator(),
+	})
+
+	jobProcessor, err := processor.NewJobProcessor[model.Job](client, cfg.RabbitMQ, dummyParser, userAgentGen)
 	require.NoError(t, err)
 	require.NotNil(t, jobProcessor)
 
