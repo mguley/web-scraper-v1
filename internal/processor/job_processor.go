@@ -6,6 +6,7 @@ import (
 	"github.com/mguley/web-scraper-v1/config"
 	"github.com/mguley/web-scraper-v1/internal/message/publisher"
 	"github.com/mguley/web-scraper-v1/internal/parser"
+	"github.com/mguley/web-scraper-v1/internal/useragent"
 	"io"
 	"net/http"
 )
@@ -22,14 +23,16 @@ import (
 // - HttpClient *http.Client: The HTTP client used to fetch web pages.
 // - Publisher publisher.Publisher[T]: The publisher used to send data to RabbitMQ.
 // - Parser parser.Parser[T]: The parser used to convert raw HTML into a structured data type T.
+// - UserAgentGen useragent.UserAgentGenerator: The generator used to create User-Agent strings.
 //
 // Methods:
 // - NewJobProcessor: Constructs a new JobProcessor with a specified HTTP client, RabbitMQ configuration, and parser.
 // - Process: Handles the complete processing pipeline from fetching a URL to publishing the parsed data.
 type JobProcessor[T any] struct {
-	HttpClient *http.Client
-	Publisher  publisher.Publisher[T]
-	Parser     parser.Parser[T]
+	HttpClient   *http.Client
+	Publisher    publisher.Publisher[T]
+	Parser       parser.Parser[T]
+	UserAgentGen useragent.UserAgentGenerator
 }
 
 // NewJobProcessor creates a new instance of JobProcessor. It sets up the necessary components for the data processing
@@ -39,11 +42,14 @@ type JobProcessor[T any] struct {
 // - client *http.Client: A pre-configured HTTP client used for making web requests.
 // - brokerConfig config.RabbitMQ: Configuration settings for RabbitMQ to set up the publisher.
 // - parser parser.Parser[T]: A parser that converts HTML content to a data type T.
+// - generator useragent.UserAgentGenerator: A generator that creates User-Agent strings.
 //
 // Returns:
 // - *JobProcessor[T]: A pointer to an instance of JobProcessor.
 // - error: An error that might occur during the setup of the publisher.
-func NewJobProcessor[T any](client *http.Client, brokerConfig config.RabbitMQ, parser parser.Parser[T]) (*JobProcessor[T], error) {
+func NewJobProcessor[T any](client *http.Client, brokerConfig config.RabbitMQ, parser parser.Parser[T],
+	generator useragent.UserAgentGenerator) (*JobProcessor[T], error) {
+
 	factory := publisher.Factory[T]{}
 	pub, err := factory.NewPublisher(brokerConfig)
 	if err != nil {
@@ -51,9 +57,10 @@ func NewJobProcessor[T any](client *http.Client, brokerConfig config.RabbitMQ, p
 	}
 
 	return &JobProcessor[T]{
-		HttpClient: client,
-		Publisher:  pub,
-		Parser:     parser,
+		HttpClient:   client,
+		Publisher:    pub,
+		Parser:       parser,
+		UserAgentGen: generator,
 	}, nil
 }
 
@@ -101,6 +108,9 @@ func (jobProcessor *JobProcessor[T]) fetchData(ctx context.Context, url string) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+
+	ua := jobProcessor.UserAgentGen.Generate()
+	request.Header.Set("User-Agent", ua)
 
 	response, resErr := jobProcessor.HttpClient.Do(request)
 	if resErr != nil {

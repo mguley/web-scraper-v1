@@ -1,4 +1,4 @@
-package user_agent
+package useragent
 
 import (
 	"fmt"
@@ -70,5 +70,5 @@ func (chrome *ChromeUserAgentGenerator) Generate() string {
 	version := chrome.versions[chrome.randSource.Intn(len(chrome.versions))]
 	os := chrome.operatingSystems[chrome.randSource.Intn(len(chrome.operatingSystems))]
 
-	return fmt.Sprintf("Mozilla/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/%s Safari/537.36", os, version)
+	return fmt.Sprintf("Mоzillа/5.0 (%s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/%s Safari/537.36", os, version)
 }

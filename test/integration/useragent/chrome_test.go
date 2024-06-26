@@ -1,8 +1,8 @@
-package user_agent
+package useragent
 
 import (
 	"fmt"
-	"github.com/mguley/web-scraper-v1/internal/user_agent"
+	"github.com/mguley/web-scraper-v1/internal/useragent"
 	"github.com/stretchr/testify/require"
 	"regexp"
 	"sync"
@@ -15,7 +15,7 @@ import (
 // Parameters:
 // - t *testing.T: The testing framework's instance.
 func TestChromeUserAgentGeneratorBasicFunctionality(t *testing.T) {
-	generator := user_agent.NewChromeUserAgentGenerator()
+	generator := useragent.NewChromeUserAgentGenerator()
 	require.NotNil(t, generator)
 
 	ua := generator.Generate()
@@ -29,7 +29,7 @@ func TestChromeUserAgentGeneratorBasicFunctionality(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing framework's instance.
 func TestChromeUserAgentGeneratorDiversity(t *testing.T) {
-	generator := user_agent.NewChromeUserAgentGenerator()
+	generator := useragent.NewChromeUserAgentGenerator()
 	require.NotNil(t, generator, "Generator should be properly initialized")
 
 	versionsSeen := make(map[string]bool)
@@ -59,7 +59,7 @@ func TestChromeUserAgentGeneratorDiversity(t *testing.T) {
 // Parameters:
 // - t *testing.T: The testing framework's instance,
 func TestChromeUserAgentGeneratorConcurrency(t *testing.T) {
-	generator := user_agent.NewChromeUserAgentGenerator()
+	generator := useragent.NewChromeUserAgentGenerator()
 	require.NotNil(t, generator)
 
 	numSamples := 100_000
@@ -102,7 +102,7 @@ func TestChromeUserAgentGeneratorConcurrency(t *testing.T) {
 // - os string: The operating system information extracted from the User-Agent string.
 // - err error: An error object that is non-nil if the parsing fails to match the expected format.
 func parseUserAgent(ua string) (version string, os string, err error) {
-	re := regexp.MustCompile(`Mozilla/5.0 \(([^)]+)\) AppleWebKit/537.36 \(KHTML, like Gecko\) Chrome/([\d.]+) Safari/537.36`)
+	re := regexp.MustCompile(`Mоzillа/5.0 \(([^)]+)\) AppleWebKit/537.36 \(KHTML, like Gecko\) Chrome/([\d.]+) Safari/537.36`)
 	matches := re.FindStringSubmatch(ua)
 
 	if len(matches) < 3 {

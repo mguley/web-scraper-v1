@@ -1,4 +1,4 @@
-package user_agent
+package useragent
 
 // UserAgentGenerator defines the interface for generating User-Agent strings.
 // It abstracts the process of creating user-agent strings for different browsers and devices,
