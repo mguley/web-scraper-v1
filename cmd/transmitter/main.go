@@ -99,18 +99,16 @@ func main() {
 
 	// Enqueue URLs for processing
 	log.Println("Enqueuing jobs...")
-	if enqueueErr := enqueueJobs(queueManager, receiverURL, 5); enqueueErr != nil {
-		log.Fatalf("Failed to enqueue a job: %v", enqueueErr)
-	}
 
-	// Block to keep the application running
-	select {}
-}
-
-func enqueueJobs(manager *taskqueue.QueueManager[model.ReceiverResponse], receiverURL string, unitCount int) error {
+	unitCount := 3
+	// Add tasks to the queue
 	for i := 0; i < unitCount; i++ {
-		manager.AddTask(taskqueue.Task{ID: fmt.Sprintf("task-%d", i+1), URL: receiverURL})
+		queueManager.AddTask(taskqueue.Task{ID: fmt.Sprintf("task-%d", i+1), URL: receiverURL})
 		log.Printf("Enqueued job %d with URL: %s", i+1, receiverURL)
 	}
-	return nil
+
+	// Process all existing tasks
+	log.Println("Waiting for jobs to finish...")
+	queueManager.ProcessExistingTasks()
+	log.Println("We are done.")
 }

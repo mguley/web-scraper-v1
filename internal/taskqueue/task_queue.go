@@ -63,6 +63,11 @@ func (manager *QueueManager[T]) AddTask(task Task) {
 	log.Printf("Added new task to queue: %v", task)
 }
 
+// ProcessExistingTasks waits until all tasks in the queue are processed.
+func (manager *QueueManager[T]) ProcessExistingTasks() {
+	manager.taskQueue.ProcessExistingTasks()
+}
+
 // Stop stops all workers and closes the task queue.
 func (manager *QueueManager[T]) Stop() {
 	log.Printf("Stopping task queue manager")

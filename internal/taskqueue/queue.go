@@ -14,9 +14,10 @@ type Task struct {
 // TaskQueue provides a thread-safe queue for managing tasks.
 // It uses a mutex for mutual exclusion and a condition variable for synchronization.
 type TaskQueue struct {
-	tasks []Task     // Slice to hold the tasks.
-	mu    sync.Mutex // Mutex for ensuring thread safety.
-	cond  *sync.Cond // Condition variable for synchronization.
+	tasks        []Task         // Slice to hold the tasks.
+	mu           sync.Mutex     // Mutex for ensuring thread safety.
+	cond         *sync.Cond     // Condition variable for synchronization.
+	processingWg sync.WaitGroup // Wait group for processing synchronization
 }
 
 // NewTaskQueue creates a new instance of TaskQueue.
@@ -40,6 +41,7 @@ func (queue *TaskQueue) AddTask(task Task) {
 	queue.mu.Lock()
 	defer queue.mu.Unlock()
 	queue.tasks = append(queue.tasks, task)
+	queue.processingWg.Add(1)
 	queue.cond.Signal()
 }
 
@@ -56,6 +58,16 @@ func (queue *TaskQueue) GetTask() Task {
 	task := queue.tasks[0]
 	queue.tasks = queue.tasks[1:]
 	return task
+}
+
+// ProcessExistingTasks waits until all tasks in the queue are processed.
+func (queue *TaskQueue) ProcessExistingTasks() {
+	queue.processingWg.Wait()
+}
+
+// TaskProcessed signals that a task has been processed.
+func (queue *TaskQueue) TaskProcessed() {
+	queue.processingWg.Done()
 }
 
 // Close clears the queue and broadcasts to all waiting goroutines.

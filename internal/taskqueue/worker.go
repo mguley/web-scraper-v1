@@ -62,6 +62,7 @@ func (worker *Worker[T]) Start(wg *sync.WaitGroup) {
 				log.Printf("Worker %d failed to process task: %v", worker.workerId, err)
 			}
 			log.Printf("Worker %d completed task: %v", worker.workerId, task)
+			worker.taskQueue.TaskProcessed()
 		}
 	}
 }
