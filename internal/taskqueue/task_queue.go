@@ -10,11 +10,12 @@ import (
 // QueueManager manages a task queue and a pool of workers to process the tasks.
 // It ensures thread safety and proper lifecycle management of workers.
 type QueueManager[T any] struct {
-	taskQueue *TaskQueue         // Task queue for managing tasks.
-	workers   []*Worker[T]       // Slice of workers processing tasks.
-	ctx       context.Context    // Context for managing cancellation.
-	cancel    context.CancelFunc // Function to cancel the context.
-	wg        sync.WaitGroup     // Wait group for synchronizing worker completion.
+	taskQueue    *TaskQueue         // Task queue for managing tasks.
+	workers      []*Worker[T]       // Slice of workers processing tasks.
+	ctx          context.Context    // Context for managing cancellation.
+	cancel       context.CancelFunc // Function to cancel the context.
+	wg           sync.WaitGroup     // Wait group for synchronizing worker completion.
+	workerConfig *WorkerConfig      // Holds configuration settings for the Worker.
 }
 
 // NewTaskQueueManager creates a new instance of QueueManager.
@@ -24,17 +25,20 @@ type QueueManager[T any] struct {
 // - ctx context.Context: Parent context for the queue manager.
 // - workerCount int: Number of workers to start.
 // - processor processor.Processor[T]: Processor for handling task processing.
+// - workerConfig *WorkerConfig: Configuration settings for the workers.
 //
 // Returns:
 // - *QueueManager[T]: A pointer to an instance of QueueManager.
-func NewTaskQueueManager[T any](ctx context.Context, workerCount int, processor processor.Processor[T]) *QueueManager[T] {
+func NewTaskQueueManager[T any](ctx context.Context, workerCount int, processor processor.Processor[T],
+	workerConfig *WorkerConfig) *QueueManager[T] {
 	ctx, cancel := context.WithCancel(ctx)
 	taskQueue := NewTaskQueue()
 	manager := &QueueManager[T]{
-		taskQueue: taskQueue,
-		workers:   make([]*Worker[T], workerCount),
-		ctx:       ctx,
-		cancel:    cancel,
+		taskQueue:    taskQueue,
+		workers:      make([]*Worker[T], workerCount),
+		ctx:          ctx,
+		cancel:       cancel,
+		workerConfig: workerConfig,
 	}
 	manager.initializeWorkers(workerCount, processor)
 	return manager
@@ -47,7 +51,7 @@ func NewTaskQueueManager[T any](ctx context.Context, workerCount int, processor 
 // - processor processor.Processor[T]: Processor for handling task processing.
 func (manager *QueueManager[T]) initializeWorkers(workerCount int, processor processor.Processor[T]) {
 	for i := 0; i < workerCount; i++ {
-		worker := NewWorker[T](manager.ctx, i+1, manager.taskQueue, processor)
+		worker := NewWorker[T](manager.ctx, i+1, manager.taskQueue, processor, manager.workerConfig)
 		manager.workers[i] = worker
 		manager.wg.Add(1)
 		go worker.Start(&manager.wg)

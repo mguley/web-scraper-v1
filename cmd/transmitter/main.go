@@ -13,6 +13,7 @@ import (
 	"github.com/mguley/web-scraper-v1/internal/useragent"
 	"log"
 	"os"
+	"time"
 )
 
 var (
@@ -92,7 +93,9 @@ func main() {
 		log.Fatalf("Failed to create receiver processor: %v", createErr)
 	}
 
-	queueManager := taskqueue.NewTaskQueueManager[model.ReceiverResponse](ctx, 3, receiverProcessor)
+	workerConfig := &taskqueue.WorkerConfig{RetryLimit: 2, RetryDelay: 2 * time.Second}
+	workerCount := 3
+	queueManager := taskqueue.NewTaskQueueManager[model.ReceiverResponse](ctx, workerCount, receiverProcessor, workerConfig)
 	defer queueManager.Stop()
 
 	log.Println("\nTask queue manager started.")
