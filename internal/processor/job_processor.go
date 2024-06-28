@@ -93,6 +93,11 @@ func (jobProcessor *JobProcessor[T]) Process(ctx context.Context, url string) (*
 	return parsedData, nil
 }
 
+// SetHttpClient sets a new HTTP client for the JobProcessor.
+func (jobProcessor *JobProcessor[T]) SetHttpClient(client *http.Client) {
+	jobProcessor.HttpClient = client
+}
+
 // fetchData handles the HTTP GET request to fetch the webpage content. It checks the HTTP status code and reads
 // the response body if the request is successful.
 //

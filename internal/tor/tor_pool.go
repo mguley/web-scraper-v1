@@ -125,6 +125,23 @@ func (pool *Pool) Return(conn *Connection) {
 	pool.cond.Signal()
 }
 
+// RefreshConnections refreshes all connections in the pool.
+func (pool *Pool) RefreshConnections() {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	for conn := range pool.Connections {
+		conn.HttpClient.CloseIdleConnections()
+		delete(pool.Connections, conn)
+		newConn, createErr := createTorConnection(conn.proxyConfig, pool.timeout)
+		if createErr != nil {
+			fmt.Printf("Failed to refresh Tor connection: %s\n", createErr)
+			continue
+		}
+		pool.Connections[newConn] = struct{}{}
+	}
+}
+
 // recycleConnections periodically refreshes the Tor connections in the pool.
 // It runs in a separate goroutine and periodically creates new Tor connections to replace the existing ones,
 // ensuring that the connections are fresh and functional.
