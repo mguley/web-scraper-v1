@@ -38,12 +38,12 @@ func NewTorFacade(proxyConfig *config.TorProxyConfig, poolSize int) (*Facade, er
 	}, nil
 }
 
-// borrowConn borrows an HTTP client from the Tor pool.
+// BorrowConnection borrows an HTTP client from the Tor pool.
 //
 // Returns:
 // - *pool.TorConnection: The borrowed TorConnection to use the Tor network.
 // - error: An error if no connection is available.
-func (torFacade *Facade) borrowConn() (*Connection, error) {
+func (torFacade *Facade) BorrowConnection() (*Connection, error) {
 	conn, err := torFacade.torPool.Borrow()
 	if err != nil {
 		return nil, fmt.Errorf("failed to borrow Tor connection: %w", err)
@@ -51,11 +51,11 @@ func (torFacade *Facade) borrowConn() (*Connection, error) {
 	return conn, nil
 }
 
-// returnConn returns an HTTP client to the Tor pool
+// ReturnConnection returns an HTTP client to the Tor pool
 //
 // Parameters:
 // - conn: The TorConnection to be returned to the pool.
-func (torFacade *Facade) returnConn(conn *Connection) {
+func (torFacade *Facade) ReturnConnection(conn *Connection) {
 	torFacade.torPool.Return(conn)
 }
 
@@ -65,7 +65,7 @@ func (torFacade *Facade) returnConn(conn *Connection) {
 // - *http.Client: The HTTP client configured to use the Tor network.
 // - error: An error if the connection could not be established.
 func (torFacade *Facade) EstablishConnection() (*http.Client, error) {
-	conn, err := torFacade.borrowConn()
+	conn, err := torFacade.BorrowConnection()
 	if err != nil {
 		return nil, fmt.Errorf("failed to establish Tor connection: %w", err)
 	}
@@ -81,11 +81,11 @@ func (torFacade *Facade) EstablishConnection() (*http.Client, error) {
 // - string: The response body from the test URL.
 // - error: An error if the request failed or the response could not be read.
 func (torFacade *Facade) TestConnection(url string) (string, error) {
-	conn, err := torFacade.borrowConn()
+	conn, err := torFacade.BorrowConnection()
 	if err != nil {
 		return "", fmt.Errorf("failed to establish Tor connection: %w", err)
 	}
-	defer torFacade.returnConn(conn)
+	defer torFacade.ReturnConnection(conn)
 
 	client := NewTorClient()
 	return client.TestConnection(conn.HttpClient, url)
@@ -117,5 +117,15 @@ func (torFacade *Facade) ChangeIdentity() error {
 		retryStrategy,
 		maxAttempts)
 
-	return identityChanger.ChangeIdentity()
+	if err := identityChanger.ChangeIdentity(); err != nil {
+		return err
+	}
+
+	return torFacade.RefreshConnections()
+}
+
+// RefreshConnections refreshes all connections in the pool.
+func (torFacade *Facade) RefreshConnections() error {
+	torFacade.torPool.RefreshConnections()
+	return nil
 }

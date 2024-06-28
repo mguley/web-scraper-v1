@@ -22,6 +22,7 @@ var (
 	poolSize    int            // Number of simultaneous connections in the pool
 )
 
+// init initializes the configuration by reading environment variables and command-line flags.
 func init() {
 	flag.StringVar(&receiverURL, "receiver-url", "", "URL of the receiver service")
 	flag.Parse()
@@ -55,63 +56,163 @@ func init() {
 	}
 
 	// Number of connections to maintain in the pool.
-	poolSize = 2
+	poolSize = 1
 }
 
+// main is the entry point of the application.
+// It initializes the Tor facade, user agent generator, and receiver processor,
+// then processes tasks in batches, changing the Tor identity between batches.
 func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Fatalf("Application panicked: %v", err)
-		}
-	}()
+	defer handlePanic()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize Tor network connection facade
+	facade := initializeTorFacade()
+	compositeUserAgentGen := initializeUserAgentGenerator()
+	receiverProcessor := initializeReceiverProcessor(facade, compositeUserAgentGen)
+
+	queueManager := initializeQueueManager(ctx, receiverProcessor)
+	defer queueManager.Stop()
+
+	processTasks(queueManager, facade, receiverProcessor)
+}
+
+// handlePanic handles any panic that occurs in the main function, logging the error and exiting the program.
+func handlePanic() {
+	if err := recover(); err != nil {
+		log.Fatalf("Application panicked: %v", err)
+	}
+}
+
+// borrowAndUseConnection borrows a connection from the Tor facade, uses it in the provided function, and returns
+// the connection to the pool afterward.
+func borrowAndUseConnection(facade *tor.Facade, use func(conn *tor.Connection)) {
+	conn, err := facade.BorrowConnection()
+	if err != nil {
+		log.Fatalf("Failed to borrow connection: %v", err)
+	}
+	defer facade.ReturnConnection(conn)
+	use(conn)
+}
+
+// initializeTorFacade initializes the Tor facade.
+//
+// Returns:
+// - *tor.Facade: The initialized Tor facade.
+func initializeTorFacade() *tor.Facade {
 	facade, err := tor.NewTorFacade(&cfg.TorProxy, poolSize)
 	if err != nil {
-		log.Fatalf("Failed to create facade: %v", err)
+		log.Fatalf("Failed to initialize tor: %v", err)
 	}
+	log.Println("\nTor facade initialized.")
+	return facade
+}
 
-	// Establish an HTTP client through the Tor facade
-	httpClient, connErr := facade.EstablishConnection()
-	if connErr != nil {
-		log.Fatalf("Failed to establish connection: %v", connErr)
-	}
-	log.Println("\nNetwork connection established.")
-
+// initializeUserAgentGenerator initializes the user agent generator.
+//
+// Returns:
+// - *useragent.CompositeUserAgentGenerator: The composite user agent generator.
+func initializeUserAgentGenerator() *useragent.CompositeUserAgentGenerator {
 	availableUserAgentGenerators := []useragent.UserAgentGenerator{
 		useragent.NewChromeUserAgentGenerator(),
 	}
-	compositeUserAgentGen := useragent.NewCompositeUserAgentGenerator(availableUserAgentGenerators)
+	return useragent.NewCompositeUserAgentGenerator(availableUserAgentGenerators)
+}
 
-	receiverParser := parser.NewReceiverResponseParser()
-	receiverProcessor, createErr := processor.NewJobProcessor[model.ReceiverResponse](httpClient,
-		cfg.RabbitMQ, receiverParser, compositeUserAgentGen)
-	if createErr != nil {
-		log.Fatalf("Failed to create receiver processor: %v", createErr)
-	}
+// initializeReceiverProcessor initializes the receiver processor with a borrowed HTTP client and user agent generator.
+//
+// Parameters:
+// - facade *tor.Facade: The Tor facade for borrowing a connection.
+// - compositeUserAgentGen *useragent.CompositeUserAgentGenerator: The user agent generator.
+//
+// Returns:
+// - *processor.JobProcessor[model.ReceiverResponse]: The initialized receiver processor.
+func initializeReceiverProcessor(facade *tor.Facade,
+	compositeUserAgentGen *useragent.CompositeUserAgentGenerator) *processor.JobProcessor[model.ReceiverResponse] {
 
-	workerConfig := &taskqueue.WorkerConfig{RetryLimit: 2, RetryDelay: 2 * time.Second}
+	var receiverProcessor *processor.JobProcessor[model.ReceiverResponse]
+
+	borrowAndUseConnection(facade, func(conn *tor.Connection) {
+		receiverParser := parser.NewReceiverResponseParser()
+		var createErr error
+		receiverProcessor, createErr = processor.NewJobProcessor[model.ReceiverResponse](conn.HttpClient,
+			cfg.RabbitMQ, receiverParser, compositeUserAgentGen)
+		if createErr != nil {
+			log.Fatalf("Failed to create receiver processor: %v", createErr)
+		}
+	})
+
+	return receiverProcessor
+}
+
+// initializeQueueManager initializes the task queue manager with the specified context and receiver processor.
+//
+// Parameters:
+// - ctx context.Context: The context for managing cancellation.
+// - receiverProcessor *processor.JobProcessor[model.ReceiverResponse]: The job processor for receiver responses.
+//
+// Returns:
+// - *taskqueue.QueueManager[model.ReceiverResponse]: The initialized task queue manager.
+func initializeQueueManager(ctx context.Context,
+	receiverProcessor *processor.JobProcessor[model.ReceiverResponse]) *taskqueue.QueueManager[model.ReceiverResponse] {
+
+	workerConfig := &taskqueue.WorkerConfig{RetryLimit: 3, RetryDelay: 2 * time.Second}
 	workerCount := 3
 	queueManager := taskqueue.NewTaskQueueManager[model.ReceiverResponse](ctx, workerCount, receiverProcessor, workerConfig)
-	defer queueManager.Stop()
-
 	log.Println("\nTask queue manager started.")
+	return queueManager
+}
 
-	// Enqueue URLs for processing
-	log.Println("Enqueuing jobs...")
+// processTasks processes the tasks in batches, changing the Tor identity between batches.
+//
+// Parameters:
+// - queueManager *taskqueue.QueueManager[model.ReceiverResponse]: The queue manager managing the tasks.
+// - facade *tor.Facade: The Tor facade for changing the Tor identity.
+// - receiverProcessor *processor.JobProcessor[model.ReceiverResponse]: The job processor for receiver responses.
+func processTasks(queueManager *taskqueue.QueueManager[model.ReceiverResponse],
+	facade *tor.Facade, receiverProcessor *processor.JobProcessor[model.ReceiverResponse]) {
 
-	unitCount := 3
-	// Add tasks to the queue
-	for i := 0; i < unitCount; i++ {
-		queueManager.AddTask(taskqueue.Task{ID: fmt.Sprintf("task-%d", i+1), URL: receiverURL})
-		log.Printf("Enqueued job %d with URL: %s", i+1, receiverURL)
+	totalRequests := 11
+	batchSize := 3
+
+	for i := 0; i < totalRequests; i++ {
+		if i > 0 && i%batchSize == 0 {
+			processBatch(queueManager, facade, receiverProcessor)
+		}
+
+		taskId := i + 1
+		queueManager.AddTask(taskqueue.Task{ID: fmt.Sprintf("task-%d", taskId), URL: receiverURL})
+		log.Printf("Enqueued job %d with URL: %s", taskId, receiverURL)
 	}
 
-	// Process all existing tasks
-	log.Println("Waiting for jobs to finish...")
+	log.Println("Waiting for last batch to finish...")
 	queueManager.ProcessExistingTasks()
-	log.Println("We are done.")
+
+	log.Println("All tasks completed.")
+}
+
+// processBatch processes the current batch of tasks and changes the Tor identity.
+//
+// Parameters:
+// - queueManager *taskqueue.QueueManager[model.ReceiverResponse]: The queue manager managing the tasks.
+// - facade *tor.Facade: The Tor facade for changing the Tor identity.
+// - receiverProcessor *processor.JobProcessor[model.ReceiverResponse]: The job processor for receiver responses.
+func processBatch(queueManager *taskqueue.QueueManager[model.ReceiverResponse], facade *tor.Facade,
+	receiverProcessor *processor.JobProcessor[model.ReceiverResponse]) {
+
+	log.Println("Waiting for batch to finish...")
+	queueManager.ProcessExistingTasks()
+
+	log.Println("Changing Tor identity...")
+	err := facade.ChangeIdentity()
+	if err != nil {
+		log.Fatalf("Failed to change Tor identity: %v", err)
+	}
+	log.Println("Tor identity changed.")
+
+	// Borrow a new connection and set the processor's HTTP client
+	borrowAndUseConnection(facade, func(conn *tor.Connection) {
+		receiverProcessor.SetHttpClient(conn.HttpClient)
+	})
 }
